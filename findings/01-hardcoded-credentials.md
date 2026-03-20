@@ -92,14 +92,22 @@ userCreds.put("shopuser", "!ns3csh0p");
 
 ![그림 1. 임의 자격증명 입력 시 로그인 실패](../images/01-hardcoded-credentials/01-invalid-login.png)
 
+임의의 계정 정보를 입력했을 때 `Invalid username and password` 메시지가 출력되며, 입력값이 인증 로직을 거쳐 실패 분기로 처리되는 것을 확인할 수 있다.
+
 ### 그림 2. LoginActivity에서 인증 함수 호출 확인
 
 ![그림 2. LoginActivity에서 인증 함수 호출 확인](../images/01-hardcoded-credentials/02-login-activity-onlogin.png)
+
+`LoginActivity.onLogin()` 메서드에서 사용자가 입력한 값이 `Util.verifyUserNamePassword(username, password)`로 전달되는 흐름을 확인할 수 있다.
 
 ### 그림 3. getUserCreds에서 하드코딩된 자격증명 확인
 
 ![그림 3. getUserCreds에서 하드코딩된 자격증명 확인](../images/01-hardcoded-credentials/03-get-user-creds.png)
 
+`getUserCreds()` 메서드 내부에 `shopuser`와 `!ns3csh0p`가 직접 선언되어 있으며, 인증 정보가 클라이언트 코드에 하드코딩되어 있음을 보여준다.
+
 ### 그림 4. 추출한 자격증명으로 로그인 성공
 
 ![그림 4. 추출한 자격증명으로 로그인 성공](../images/01-hardcoded-credentials/04-login-success.png)
+
+식별한 자격증명으로 로그인했을 때 `ProductListActivity`가 표시되며, 하드코딩된 정보만으로 인증 절차를 통과할 수 있음을 검증할 수 있다.
