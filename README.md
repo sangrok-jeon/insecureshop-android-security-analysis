@@ -79,21 +79,22 @@ insecureshop/
 
 #### 증빙 이미지
 
-아래 파일명 규칙으로 이미지를 저장한다.
+이미지는 `README.md` 기준 상대 경로인 `./images/...`를 사용한다.
 
 1. `./images/01-hardcoded-credentials/01-invalid-login.png`
 2. `./images/01-hardcoded-credentials/02-login-activity-onlogin.png`
 3. `./images/01-hardcoded-credentials/03-get-user-creds.png`
 4. `./images/01-hardcoded-credentials/04-login-success.png`
 
-필요하면 아래 형식으로 본문 하단에 삽입한다.
+실제 이미지 파일을 추가한 뒤 아래와 같이 바로 렌더링되도록 넣는다.
 
-```md
 ![그림 1. 임의 자격증명 입력 시 로그인 실패](./images/01-hardcoded-credentials/01-invalid-login.png)
+
 ![그림 2. LoginActivity에서 인증 함수 호출 확인](./images/01-hardcoded-credentials/02-login-activity-onlogin.png)
+
 ![그림 3. getUserCreds에서 하드코딩된 자격증명 확인](./images/01-hardcoded-credentials/03-get-user-creds.png)
+
 ![그림 4. 추출한 자격증명으로 로그인 성공](./images/01-hardcoded-credentials/04-login-success.png)
-```
 
 ### 4.2 Weak Host Validation Check
 
