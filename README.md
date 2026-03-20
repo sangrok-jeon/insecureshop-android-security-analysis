@@ -88,8 +88,30 @@
 
 식별한 자격증명으로 로그인했을 때 `ProductListActivity`가 표시되며, 하드코딩된 정보만으로 인증 절차를 통과할 수 있음을 검증할 수 있다.
 
+### 4.2 WebView Deeplink URL Validation Issues
+
+상세 보고서: [02-webview-deeplink-url-validation.md](./findings/02-webview-deeplink-url-validation.md)
+
+`WebViewActivity`를 분석한 결과, deeplink로 전달된 외부 URL을 WebView에 로드하는 과정에서 두 가지 문제가 확인되었다. `/web` 경로에서는 `url` 파라미터가 충분한 검증 없이 바로 `loadUrl()`로 전달되었고, `/webview` 경로에서는 검증이 존재하더라도 `endsWith("insecureshopapp.com")`와 같은 약한 문자열 비교만 수행하여 우회 가능성이 존재했다.
+
+동적 검증에서는 `nox_adb shell am start` 명령으로 `/web` 및 `/webview` 경로를 각각 호출하여, 임의 URL 로드와 약한 host 검증 우회 가능성을 확인하였다.
+
+#### 동적 검증 예시
+
+`/web` 경로에서는 아래 명령으로 `naver.com`이 앱 내부 WebView에 그대로 로드되는 것을 확인하였다.
+
+```powershell
+nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/web?url=https%3A%2F%2Fnaver.com" com.insecureshop
+```
+
+`/webview` 경로에서는 아래 명령으로 실제 host는 `naver.com`이지만, 문자열 끝이 `insecureshopapp.com`으로 끝나도록 구성한 URL이 로드되는 것을 확인하였다.
+
+```powershell
+nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/webview?url=https%3A%2F%2Fnaver.com%2F%3Fq%3Dinsecureshopapp.com" com.insecureshop
+```
+
 ## 5. 결론
 
-이번 분석에서는 `jadx`를 이용해 로그인 처리 흐름을 추적하고, `getUserCreds()` 메서드에 하드코딩된 자격증명을 식별한 뒤 실제 로그인 성공까지 검증하였다. 이를 통해 Android 애플리케이션에서 하드코딩된 인증정보가 얼마나 쉽게 식별되고 악용될 수 있는지 확인할 수 있었다.
+이번 저장소에서는 `InsecureShop`을 대상으로 Android 앱 보안 분석을 수행하며, 현재 `Hardcoded Credentials`와 `WebView Deeplink URL Validation Issues` 두 가지 항목을 정리하였다. 두 사례를 통해 클라이언트 내부 자격증명 노출과 deeplink 기반 WebView URL 처리 취약점이 어떻게 실제 악용 가능성으로 이어지는지 확인할 수 있었다.
 
-본 문서는 `InsecureShop` 로그인 기능에서 확인한 하드코딩 자격증명 취약점을 정리한 분석 결과다.
+각 분석은 정적 분석과 동적 검증을 함께 포함하며, 코드 근거와 실제 재현 절차를 함께 정리하는 것을 기준으로 작성하였다.
