@@ -79,19 +79,13 @@ nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.i
 
 ## 9. 취약점 테스트
 
-### 1. Deeplink 진입점 확인
+### 1. `/web` 경로 처리 코드 확인
 
-![1. Deeplink 진입점 확인](../images/02-insufficient-url-validation/01-manifest-webview-entrypoint.png)
-
-`WebViewActivity`는 `VIEW` 및 `BROWSABLE` 인텐트 필터와 `scheme`, `host`를 함께 선언하고 있어 외부 URI 기반 deeplink 진입점으로 동작함을 확인할 수 있다.
-
-### 2. `/web` 경로 처리 코드 확인
-
-![2. `/web` 경로 처리 코드 확인](../images/02-insufficient-url-validation/02-webview-path-validation-code.png)
+![1. `/web` 경로 처리 코드 확인](../images/02-insufficient-url-validation/02-webview-path-validation-code.png)
 
 `WebViewActivity` 내부에서는 `intent.getData()`로 전달된 URI를 기준으로 경로를 분기한다. `/web` 분기에서는 `url` 파라미터를 대입한 뒤 별도 검증 없이 `webview.loadUrl(data)`가 호출되는 구조를 확인할 수 있다.
 
-### 3. `/web` 분기로 임의 URL 로드 확인
+### 2. `/web` 분기로 임의 URL 로드 확인
 
 사용 명령:
 
@@ -99,6 +93,6 @@ nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.i
 nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/web?url=https%3A%2F%2Fnaver.com" com.insecureshop
 ```
 
-![3. `/web` 분기로 임의 URL 로드 확인](../images/02-insufficient-url-validation/03-web-deeplink-load-naver.png)
+![2. `/web` 분기로 임의 URL 로드 확인](../images/02-insufficient-url-validation/03-web-deeplink-load-naver.png)
 
 실행 결과 `naver.com`이 앱 내부 WebView에 그대로 로드되었다. 이를 통해 `/web` 경로에서는 임의 URL 로드가 가능함을 검증하였다.
