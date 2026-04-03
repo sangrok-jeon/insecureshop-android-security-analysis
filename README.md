@@ -8,7 +8,7 @@
 
 - 실행 환경: `Nox`
 - 정적 분석: `jadx`
-- 동적 분석: `adb`, `nox_adb`, Android Studio
+- 동적 분석: `adb`, `nox_adb`, `Android Studio`
 - 보조 도구: `Burp Suite`, `Frida`
 
 ## 3. 완료한 분석 현황
