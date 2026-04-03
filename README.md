@@ -49,8 +49,14 @@
 
 동적 검증은 일반 서드파티 앱 역할의 PoC 애플리케이션을 별도로 만들어 진행하였다. `PrivateActivity`를 직접 호출했을 때는 `SecurityException`이 발생했지만, `WebView2Activity`를 경유해 `extra_intent` 안에 `PrivateActivity` Intent를 넣어 전달했을 때는 내부 화면이 실제로 열렸다. 이를 통해 exported Activity를 통해 protected component에 우회 접근 가능한 구조를 확인하였다.
 
+### 4.4 Insecure Content Provider
+
+상세 보고서: [04-insecure-content-provider.md](./findings/04-insecure-content-provider.md)
+
+`InsecureShopProvider`는 `content://com.insecureshop.provider/insecure` URI에 대한 query 요청을 처리하며, `username`과 `password`를 그대로 반환하고 있었다. `query()` 내부에서는 `Prefs`에 저장된 사용자명과 비밀번호를 `MatrixCursor`에 담아 반환하고 있었고, 실제로 `nox_adb shell content query` 명령만으로 자격증명이 직접 조회되었다.
+
 ## 5. 결론
 
-이번 저장소에서는 `InsecureShop`을 대상으로 Android 앱 보안 분석을 수행하며, 현재 `Hardcoded Credentials`, `WebView Deeplink URL Validation Issues`, `Access to Protected Components` 세 가지 항목을 정리하였다. 세 사례를 통해 클라이언트 내부 자격증명 노출, deeplink 기반 WebView URL 처리 문제, Android 컴포넌트 보호 경계 우회가 각각 어떤 방식으로 실제 악용 가능성으로 이어지는지 확인할 수 있었다.
+이번 저장소에서는 `InsecureShop`을 대상으로 Android 앱 보안 분석을 수행하며, 현재 `Hardcoded Credentials`, `WebView Deeplink URL Validation Issues`, `Access to Protected Components`, `Insecure Content Provider` 네 가지 항목을 정리하였다. 각 사례를 통해 클라이언트 내부 자격증명 노출, deeplink 기반 WebView URL 처리 문제, Android 컴포넌트 보호 경계 우회, 그리고 IPC를 통한 민감정보 유출이 각각 어떤 방식으로 실제 악용 가능성으로 이어지는지 확인할 수 있었다.
 
 각 분석은 정적 분석과 동적 검증을 함께 포함하며, 코드 근거와 실제 재현 절차를 함께 정리하는 것을 기준으로 작성하였다.
