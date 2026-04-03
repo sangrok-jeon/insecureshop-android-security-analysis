@@ -4,7 +4,7 @@
 
 `InsecureShop`의 `WebView2Activity`를 분석한 결과, 외부에서 전달된 embedded Intent를 검증 없이 실행하는 구조를 확인하였다. 이로 인해 원래 외부 앱이 직접 접근할 수 없는 `PrivateActivity`와 같은 보호된 컴포넌트가 exported Activity를 통해 우회 호출될 수 있었다.
 
-이번 항목은 단순히 Manifest 설정만 확인하는 데 그치지 않고, 일반 서드파티 앱 역할을 하는 PoC 애플리케이션을 직접 만들어 `Direct Launch`와 `Proxy Launch`의 차이를 비교하는 방식으로 검증하였다.
+이번 항목은 단순히 Manifest 설정만 확인하는 데 그치지 않고, 일반 서드파티 앱 역할을 하는 `PoC App`을 직접 만들어 `Direct Launch`와 `Proxy Launch`의 차이를 비교하는 방식으로 검증하였다.
 
 ## 2. 취약점 요약
 
@@ -24,7 +24,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | PoC 앱, `nox_adb` |
+| 동적 검증 | `PoC App`, `nox_adb` |
 
 ## 4. 분석 방법
 
@@ -33,7 +33,7 @@
 1. `AndroidManifest.xml`에서 외부 접근이 제한된 Activity와 외부 호출 가능한 Activity를 구분하였다.
 2. `PrivateActivity`가 `exported=false`로 선언된 보호 대상 컴포넌트임을 확인하였다.
 3. `WebView2Activity`에서 외부 입력을 통해 전달된 `extra_intent`를 어떻게 처리하는지 코드 흐름을 추적하였다.
-4. Android Studio에서 일반 서드파티 앱 역할의 PoC 앱을 생성하고, `PrivateActivity` 직접 실행과 `WebView2Activity`를 통한 우회 실행을 비교하였다.
+4. Android Studio에서 일반 서드파티 앱 역할의 `PoC App`을 생성하고, `PrivateActivity` 직접 실행과 `WebView2Activity`를 통한 우회 실행을 비교하였다.
 5. 마지막으로 `PrivateActivity` 내부 코드를 확인하여 우회 실행 후 나타난 결과 화면을 해석하였다.
 
 ## 5. 상세 분석
@@ -93,22 +93,22 @@ if (extraIntent != null) {
 
 문제는 이 구조에서 공격자가 `extra_intent` 안에 `PrivateActivity`를 가리키는 Intent를 넣을 수 있다는 점이다. 그 경우 외부 앱은 원래 직접 접근할 수 없는 `PrivateActivity`를 `WebView2Activity`를 경유해 우회 호출할 수 있다.
 
-### 5.5 왜 PoC 앱이 필요했는가
+### 5.5 왜 `PoC App`이 필요했는가
 
 이 취약점은 `extra_intent`가 단순 문자열이 아니라 `Parcelable Intent`라는 점이 핵심이다. 따라서 일반적인 `adb shell am start` 명령만으로는 nested Intent를 정확히 전달하기 어렵고, 일반 서드파티 앱 관점의 재현도 불완전하다.
 
-또한 `adb shell`에서의 컴포넌트 호출은 shell 권한으로 동작하므로, `exported=false` 컴포넌트에 대한 실제 외부 앱 접근 가능 여부를 검증하는 방식으로는 적절하지 않았다. 그래서 이번 항목은 일반 앱 역할을 수행하는 PoC 애플리케이션을 별도로 만들어 검증하였다.
+또한 `adb shell`에서의 컴포넌트 호출은 shell 권한으로 동작하므로, `exported=false` 컴포넌트에 대한 실제 외부 앱 접근 가능 여부를 검증하는 방식으로는 적절하지 않았다. 그래서 이번 항목은 일반 앱 역할을 수행하는 `PoC App`을 별도로 만들어 검증하였다.
 
-### 5.6 Android Studio 기반 PoC 앱 제작
+### 5.6 Android Studio 기반 `PoC App` 제작
 
-이번 항목은 `extra_intent`가 `Parcelable Intent`이기 때문에, 문자열 extra 위주의 `adb am start`만으로는 일반 외부 앱 시나리오를 정확히 재현하기 어려웠다. 따라서 Android Studio에서 `Empty Views Activity` 템플릿을 이용해 `IntentProxyPoC`라는 이름의 최소 PoC 앱을 생성하였다.
+이번 항목은 `extra_intent`가 `Parcelable Intent`이기 때문에, 문자열 extra 위주의 `adb am start`만으로는 일반 외부 앱 시나리오를 정확히 재현하기 어려웠다. 따라서 Android Studio에서 `Empty Views Activity` 템플릿을 이용해 `IntentProxyPoC`라는 이름의 최소 `PoC App`을 생성하였다.
 
-PoC 앱의 목적은 단순하다.
+`PoC App`의 목적은 단순하다.
 
 - `PrivateActivity`를 직접 실행했을 때 차단되는지 확인
 - `WebView2Activity`를 경유해 `extra_intent`를 전달했을 때 우회 실행되는지 확인
 
-PoC 앱은 `MainActivity` 하나와 버튼 두 개만으로 구성하였다.
+`PoC App`은 `MainActivity` 하나와 버튼 두 개만으로 구성하였다.
 
 - `DIRECT LAUNCH PRIVATEACTIVITY`
 - `LAUNCH VIA WEBVIEW2ACTIVITY`
@@ -161,9 +161,9 @@ public class MainActivity extends AppCompatActivity {
 
 이 코드는 일반 앱 입장에서 직접 실행과 proxy 실행의 차이를 비교하기 위한 최소 구성이다. 특히 `proxyLaunch()`는 `extra_intent` 안에 `PrivateActivity` Intent를 담아 `WebView2Activity`로 전달한다는 점에서, 실제 취약점 구조를 그대로 재현한다.
 
-### 5.7 PoC 앱을 이용한 동적 검증
+### 5.7 `PoC App`을 이용한 동적 검증
 
-PoC 앱에서는 두 가지 동작을 비교하였다.
+`PoC App`에서는 두 가지 동작을 비교하였다.
 
 첫 번째는 `PrivateActivity`를 직접 실행하는 방식이다.
 
@@ -202,7 +202,7 @@ if (data == null) {
 webview.loadUrl(data);
 ```
 
-실제 PoC 실행 후 나타난 `ERR_NAME_NOT_RESOLVED` 화면은 protected component 접근이 실패했다는 의미가 아니라, `PrivateActivity`가 기본 URL을 로드하려다 DNS 해석에 실패한 결과로 해석할 수 있었다. 즉 우회 실행 자체는 성공하였고, 이후 내부 화면에서 로드한 웹 자원만 실패한 것이다.
+실제 `PoC App` 실행 후 나타난 `ERR_NAME_NOT_RESOLVED` 화면은 protected component 접근이 실패했다는 의미가 아니라, `PrivateActivity`가 기본 URL을 로드하려다 DNS 해석에 실패한 결과로 해석할 수 있었다. 즉 우회 실행 자체는 성공하였고, 이후 내부 화면에서 로드한 웹 자원만 실패한 것이다.
 
 ## 6. 영향도
 
@@ -233,11 +233,11 @@ webview.loadUrl(data);
 
 ![1. Android Studio 템플릿 선택](../images/05-access-to-protected-components/01-android-studio-template.png)
 
-PoC 앱은 Android Studio에서 `Empty Views Activity` 템플릿으로 생성하였다. 이번 항목은 일반 외부 앱 관점의 동작을 검증하는 것이 목적이므로, 복잡한 구조 없이 `MainActivity` 하나만 가진 최소 앱으로도 충분했다.
+`PoC App`은 Android Studio에서 `Empty Views Activity` 템플릿으로 생성하였다. 이번 항목은 일반 외부 앱 관점의 동작을 검증하는 것이 목적이므로, 복잡한 구조 없이 `MainActivity` 하나만 가진 최소 앱으로도 충분했다.
 
-### 2. PoC 앱 생성 설정
+### 2. PoC App 생성 설정
 
-![2. PoC 앱 생성 설정](../images/05-access-to-protected-components/02-android-studio-project-config.png)
+![2. PoC App 생성 설정](../images/05-access-to-protected-components/02-android-studio-project-config.png)
 
 프로젝트 이름은 `IntentProxyPoC`로 설정하고, Java 기반의 기본 Activity 프로젝트를 생성하였다. 이 앱은 공격자 역할의 서드파티 애플리케이션으로 사용되며, `Direct Launch`와 `Proxy Launch` 동작만 비교하도록 구성하였다.
 
@@ -253,23 +253,23 @@ PoC 앱은 Android Studio에서 `Empty Views Activity` 템플릿으로 생성하
 
 `WebView2Activity`는 외부 Intent를 받을 수 있는 진입점이며, 코드상 `getParcelableExtra("extra_intent")`로 embedded Intent를 받은 뒤 이를 검증 없이 `startActivity(extraIntent)`로 실행한다. 이 시점에서 외부 앱이 전달한 Intent가 그대로 내부 Activity 실행에 사용될 수 있다.
 
-### 5. PoC 앱 핵심 코드 확인
+### 5. PoC App 핵심 코드 확인
 
-![5. PoC 앱 핵심 코드 확인](../images/05-access-to-protected-components/05-poc-mainactivity-code.png)
+![5. PoC App 핵심 코드 확인](../images/05-access-to-protected-components/05-poc-mainactivity-code.png)
 
-PoC 앱의 `MainActivity`는 `PrivateActivity` 직접 실행과 `WebView2Activity` 경유 실행을 각각 버튼으로 분리해 비교한다. 특히 `proxyLaunch()`는 `extra_intent` 안에 `PrivateActivity` Intent를 담아 전달함으로써, 취약한 proxy launch 구조를 그대로 재현한다.
+`PoC App`의 `MainActivity`는 `PrivateActivity` 직접 실행과 `WebView2Activity` 경유 실행을 각각 버튼으로 분리해 비교한다. 특히 `proxyLaunch()`는 `extra_intent` 안에 `PrivateActivity` Intent를 담아 전달함으로써, 취약한 proxy launch 구조를 그대로 재현한다.
 
 ### 6. Direct Launch 실패 확인
 
 ![6. Direct Launch 실패 확인](../images/05-access-to-protected-components/06-direct-launch-failed.png)
 
-PoC 앱에서 `PrivateActivity`를 직접 호출하도록 구현한 결과, 실행 시 `SecurityException`이 발생하였다. 이는 보호 대상 컴포넌트가 일반 외부 앱에 대해 직접 접근 차단 상태임을 보여준다.
+`PoC App`에서 `PrivateActivity`를 직접 호출하도록 구현한 결과, 실행 시 `SecurityException`이 발생하였다. 이는 보호 대상 컴포넌트가 일반 외부 앱에 대해 직접 접근 차단 상태임을 보여준다.
 
 ### 7. Proxy Launch 성공 확인
 
 ![7. Proxy Launch 성공 확인](../images/05-access-to-protected-components/07-proxy-launch-success.png)
 
-PoC 앱에서 `WebView2Activity`를 호출하면서 `extra_intent` 안에 `PrivateActivity` Intent를 담아 전달한 결과, 내부 WebView 화면이 실행되었다. 이후 표시된 `ERR_NAME_NOT_RESOLVED`는 `PrivateActivity` 내부 기본 URL 로딩 실패에 해당하며, protected component 우회 실행 자체는 성공했음을 보여준다.
+`PoC App`에서 `WebView2Activity`를 호출하면서 `extra_intent` 안에 `PrivateActivity` Intent를 담아 전달한 결과, 내부 WebView 화면이 실행되었다. 이후 표시된 `ERR_NAME_NOT_RESOLVED`는 `PrivateActivity` 내부 기본 URL 로딩 실패에 해당하며, protected component 우회 실행 자체는 성공했음을 보여준다.
 
 ### 8. PrivateActivity 기본 URL 로드 코드 확인
 

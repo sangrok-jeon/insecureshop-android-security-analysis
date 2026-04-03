@@ -18,8 +18,8 @@
 | 1 | Hardcoded Credentials | `jadx`, `nox_adb` | [findings/01-hardcoded-credentials.md](./findings/01-hardcoded-credentials.md) |
 | 2 | Insufficient URL Validation | `jadx`, `nox_adb` | [findings/02-webview-deeplink-url-validation.md](./findings/02-webview-deeplink-url-validation.md) |
 | 3 | Weak Host Validation Check | `jadx`, `nox_adb` | [findings/02-webview-deeplink-url-validation.md](./findings/02-webview-deeplink-url-validation.md) |
-| 4 | Arbitrary Code Execution | `jadx`, `Android Studio`, `nox_adb`, `PoC 앱` | [findings/04-arbitrary-code-execution.md](./findings/04-arbitrary-code-execution.md) |
-| 5 | Access to Protected Components | `jadx`, `Android Studio`, `PoC 앱` | [findings/05-access-to-protected-components.md](./findings/05-access-to-protected-components.md) |
+| 4 | Arbitrary Code Execution | `jadx`, `Android Studio`, `nox_adb`, `PoC App` | [findings/04-arbitrary-code-execution.md](./findings/04-arbitrary-code-execution.md) |
+| 5 | Access to Protected Components | `jadx`, `Android Studio`, `PoC App` | [findings/05-access-to-protected-components.md](./findings/05-access-to-protected-components.md) |
 | 15 | Insecure Content Provider | `jadx`, `nox_adb` | [findings/15-insecure-content-provider.md](./findings/15-insecure-content-provider.md) |
 
-`2`와 `3`은 동일한 `WebViewActivity`의 deeplink 처리 구조에서 함께 발생해 하나의 상세 보고서로 통합했다. `4`는 Android Studio로 제작한 별도 PoC 앱과 `logcat` 검증 결과를 함께 사용해 재현했다.
+`2`와 `3`은 동일한 `WebViewActivity`의 deeplink 처리 구조에서 함께 발생해 하나의 상세 보고서로 통합했다. `4`는 Android Studio로 제작한 별도 `PoC App`과 `logcat` 검증 결과를 함께 사용해 재현했다.

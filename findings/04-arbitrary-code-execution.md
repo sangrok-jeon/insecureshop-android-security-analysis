@@ -4,7 +4,7 @@
 
 `InsecureShop`의 `LoginActivity`를 분석한 결과, 설치된 앱 목록 중 패키지명이 `com.insecureshopapp`로 시작하는 앱을 신뢰하고 해당 패키지의 코드를 동적으로 로드하여 실행하는 구조를 확인하였다. 패키지 검증이 prefix 비교 수준에 머물러 있기 때문에, 공격자는 유사한 패키지명을 가진 악성 앱을 설치해 `InsecureShop`가 외부 코드를 실행하도록 유도할 수 있다.
 
-이번 항목은 취약 코드의 정적 분석과, Android Studio로 제작한 별도 PoC 앱을 `Nox`에 설치한 뒤 `logcat`과 `Toast`를 통해 실제 외부 코드가 실행되는지 검증하는 방식으로 진행하였다.
+이번 항목은 취약 코드의 정적 분석과, Android Studio로 제작한 별도 `PoC App`을 `Nox`에 설치한 뒤 `logcat`과 `Toast`를 통해 실제 외부 코드가 실행되는지 검증하는 방식으로 진행하였다.
 
 ## 2. 취약점 요약
 
@@ -32,9 +32,9 @@
 
 1. `LoginActivity.onLogin()` 내부에서 외부 패키지를 탐색하는 코드를 확인하였다.
 2. 패키지명 검증 방식과 `createPackageContext(...)`, `loadClass(...)`, `invoke(...)` 흐름을 분석하였다.
-3. `applicationId`가 `com.insecureshopapp`로 시작하는 PoC 앱을 Android Studio로 제작하였다.
-4. PoC 앱 안에 `com.insecureshopapp.MainInterface#getInstance(Context)`를 구현하였다.
-5. PoC 앱 설치 후 `InsecureShop` 로그인 버튼 클릭을 트리거로 사용하고, `Toast` 및 `logcat`으로 외부 코드 실행 여부를 검증하였다.
+3. `applicationId`가 `com.insecureshopapp`로 시작하는 `PoC App`을 Android Studio로 제작하였다.
+4. `PoC App` 안에 `com.insecureshopapp.MainInterface#getInstance(Context)`를 구현하였다.
+5. `PoC App` 설치 후 `InsecureShop` 로그인 버튼 클릭을 트리거로 사용하고, `Toast` 및 `logcat`으로 외부 코드 실행 여부를 검증하였다.
 
 ## 5. 상세 분석
 
@@ -67,15 +67,15 @@ Object value = packageContext.getClassLoader()
 
 여기서 `3`은 `CONTEXT_INCLUDE_CODE`와 `CONTEXT_IGNORE_SECURITY` 조합으로 해석할 수 있으며, 외부 패키지의 코드를 포함한 context를 생성한 뒤 보안 제약을 무시하고 클래스를 로드하는 흐름에 해당한다. 이후 `com.insecureshopapp.MainInterface#getInstance(Context)`가 직접 호출되므로, 조건에 맞는 패키지와 클래스를 가진 앱이 설치되어 있으면 그 코드가 실행된다.
 
-### 5.3 PoC 앱 제작
+### 5.3 PoC App 제작
 
-동적 검증을 위해 Android Studio에서 별도 PoC 앱을 제작하였다.
+동적 검증을 위해 Android Studio에서 별도 `PoC App`을 제작하였다.
 
 - `applicationId`: `com.insecureshopapp.jsrdevice`
 - 로드 대상 클래스: `com.insecureshopapp.MainInterface`
 - 실행 메서드: `getInstance(Context)`
 
-PoC 앱은 실제 악성 행위 대신 아래 세 가지 증적을 남기도록 구현하였다.
+`PoC App`은 실제 악성 행위 대신 아래 세 가지 증적을 남기도록 구현하였다.
 
 - `Toast`: `jsrdevice PoC executed`
 - `logcat` 태그: `jsrdevice_poc`
@@ -85,7 +85,7 @@ PoC 앱은 실제 악성 행위 대신 아래 세 가지 증적을 남기도록 
 
 ### 5.4 동적 검증 결과
 
-PoC 앱 설치 후 `InsecureShop` 로그인 화면에서 임의의 계정정보를 입력하고 로그인 버튼을 클릭하자, 화면 하단에 `jsrdevice PoC executed` 토스트가 표시되었다. 동시에 `logcat`에서는 아래와 같이 PoC 코드가 실제로 호출된 흔적이 확인되었다.
+`PoC App` 설치 후 `InsecureShop` 로그인 화면에서 임의의 계정정보를 입력하고 로그인 버튼을 클릭하자, 화면 하단에 `jsrdevice PoC executed` 토스트가 표시되었다. 동시에 `logcat`에서는 아래와 같이 PoC 코드가 실제로 호출된 흔적이 확인되었다.
 
 ```text
 D jsrdevice_poc: MainInterface.getInstance invoked by InsecureShop
@@ -113,7 +113,7 @@ D object_value: jsrdevice-poc-executed
 
 ## 8. 결론
 
-이번 분석에서는 `LoginActivity`가 외부 패키지를 약하게 검증한 뒤, 해당 패키지의 클래스를 동적으로 로드하고 메서드를 호출하는 구조를 확인하였다. 또한 별도 PoC 앱을 통해 `Toast`와 `logcat` 증적을 확보함으로써, `Arbitrary Code Execution via third-party package contexts`가 실제로 재현 가능함을 검증하였다.
+이번 분석에서는 `LoginActivity`가 외부 패키지를 약하게 검증한 뒤, 해당 패키지의 클래스를 동적으로 로드하고 메서드를 호출하는 구조를 확인하였다. 또한 별도 `PoC App`을 통해 `Toast`와 `logcat` 증적을 확보함으로써, `Arbitrary Code Execution via third-party package contexts`가 실제로 재현 가능함을 검증하였다.
 
 ## 9. 취약점 테스트
 
@@ -123,11 +123,11 @@ D object_value: jsrdevice-poc-executed
 
 `LoginActivity.onLogin()`은 설치된 패키지 목록을 순회하며 패키지명이 `com.insecureshopapp`로 시작하는 앱을 찾고, 조건을 만족하면 `createPackageContext(...)`, `loadClass(...)`, `invoke(...)`를 통해 외부 코드를 실행한다. 이 코드가 4번 취약점의 핵심 근거다.
 
-### 2. PoC 앱의 MainInterface 구현 확인
+### 2. PoC App의 MainInterface 구현 확인
 
-![2. PoC 앱의 MainInterface 구현 확인](../images/04-arbitrary-code-execution/02-poc-maininterface-code.png)
+![2. PoC App의 MainInterface 구현 확인](../images/04-arbitrary-code-execution/02-poc-maininterface-code.png)
 
-동적 검증을 위해 `applicationId`가 `com.insecureshopapp.jsrdevice`인 PoC 앱을 제작하고, 그 안에 `com.insecureshopapp.MainInterface#getInstance(Context)`를 구현하였다. 이 메서드는 `Toast`, `logcat`, 반환 문자열을 통해 실행 흔적을 남기도록 구성하였다.
+동적 검증을 위해 `applicationId`가 `com.insecureshopapp.jsrdevice`인 `PoC App`을 제작하고, 그 안에 `com.insecureshopapp.MainInterface#getInstance(Context)`를 구현하였다. 이 메서드는 `Toast`, `logcat`, 반환 문자열을 통해 실행 흔적을 남기도록 구성하였다.
 
 ### 3. 로그인 버튼 클릭 시 PoC 코드 실행 확인
 
