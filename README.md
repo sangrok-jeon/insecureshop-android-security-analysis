@@ -29,11 +29,17 @@
 
 로그인 로직을 분석한 결과, 계정 정보가 애플리케이션 내부 코드에 하드코딩되어 있었고 APK 디컴파일만으로 식별한 자격증명을 이용해 정상 로그인까지 가능함을 확인하였다.
 
-### 4.2-4.3 WebView Deeplink URL Validation Issues
+### 4.2 Insufficient URL Validation
 
 상세 보고서: [02-webview-deeplink-url-validation.md](./findings/02-webview-deeplink-url-validation.md)
 
-`WebViewActivity`를 분석한 결과, deeplink로 전달된 외부 URL을 WebView에 로드하는 과정에서 두 가지 문제가 확인되었다. `/web` 경로에서는 `url` 파라미터가 충분한 검증 없이 바로 `loadUrl()`로 전달되었고, `/webview` 경로에서는 검증이 존재했지만 `endsWith("insecureshopapp.com")` 같은 약한 문자열 비교만 수행하여 우회 가능성이 존재했다.
+`WebViewActivity`의 `/web` 경로에서는 deeplink로 전달된 `url` 파라미터가 충분한 검증 없이 바로 `loadUrl()`로 전달되었다. 그 결과 앱 내부 WebView에서 임의 외부 URL을 직접 로드할 수 있었다.
+
+### 4.3 Weak Host Validation Check
+
+상세 보고서: [02-webview-deeplink-url-validation.md](./findings/02-webview-deeplink-url-validation.md)
+
+`/webview` 경로에서는 검증이 존재했지만, 실제 host 비교가 아니라 `endsWith("insecureshopapp.com")` 같은 약한 문자열 비교만 수행하고 있었다. 이를 이용해 실제 host가 허용 도메인이 아니더라도 검증 우회가 가능함을 확인하였다.
 
 ### 4.5 Access to Protected Components
 
@@ -49,4 +55,4 @@
 
 ## 5. 결론
 
-현재 저장소에는 공식 문제 번호 기준으로 `1`, `2-3`, `5`, `15`번 항목이 정리되어 있다. 이후 문서도 동일한 번호 체계를 유지하면서 순차적으로 확장할 예정이며, 각 보고서는 정적 분석 근거와 동적 검증 결과를 함께 제시하는 형식으로 이어간다.
+현재 저장소에는 공식 문제 번호 기준으로 `1`, `2`, `3`, `5`, `15`번 항목이 정리되어 있다. 이 중 `2`와 `3`은 동일한 `WebViewActivity`의 deeplink 처리 구조에서 함께 확인되어 하나의 상세 보고서로 통합해 정리하였다. 이후 문서도 동일한 번호 체계를 유지하면서 순차적으로 확장할 예정이며, 각 보고서는 정적 분석 근거와 동적 검증 결과를 함께 제시하는 형식으로 이어간다.

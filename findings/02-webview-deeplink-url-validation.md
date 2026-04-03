@@ -9,6 +9,8 @@
 
 즉 동일한 Activity 내부에서 `Insufficient URL Validation`과 `Weak Host Validation Check`가 서로 다른 분기로 함께 나타난다.
 
+이번 보고서는 공식 문제 번호 기준 `4.2 Insufficient URL Validation`과 `4.3 Weak Host Validation Check`를 함께 다룬다. 두 항목이 모두 동일한 `WebViewActivity`의 deeplink 처리 구조 안에서 발생하며, 정적 분석 근거와 동적 검증 흐름이 크게 겹치기 때문에 하나의 문서로 통합해 정리하였다.
+
 ## 2. 취약점 요약
 
 | 항목 | 내용 |
