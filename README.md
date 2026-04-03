@@ -13,7 +13,7 @@
 | 분석 대상 | `InsecureShop` |
 | 플랫폼 | Android |
 | 실행 환경 | `Nox` |
-| 분석 도구 | `adb`, `jadx` |
+| 분석 도구 | `adb`, `jadx`, `Android Studio` |
 | 추가 도구 | `Burp Suite`, `Frida` |
 | 분석 범위 | 로그인, WebView/Deeplink, Android Components, Content Provider, 네트워크 통신 |
 
@@ -22,7 +22,7 @@
 분석은 정적 분석과 동적 분석을 병행하는 방식으로 진행하였다.
 
 - 정적 분석: `jadx`를 이용해 `AndroidManifest.xml`, Activity, Utility 클래스, WebView 처리 로직, Provider 설정, SSL 관련 코드를 확인하였다.
-- 동적 분석: `adb`를 이용해 앱 설치 및 실행, 컴포넌트 호출, `logcat` 확인을 수행하였다.
+- 동적 분석: `adb`를 이용해 앱 설치 및 실행, 컴포넌트 호출, `logcat` 확인을 수행하였고, 필요한 경우 Android Studio 기반 PoC 앱으로 일반 서드파티 앱 관점의 재현을 진행하였다.
 - 네트워크 분석: `Burp Suite`를 통해 프록시 기반 트래픽 확인 및 SSL 검증 우회 여부를 검토하였다.
 - 런타임 분석: 필요한 경우 `Frida`를 이용해 메서드 동작과 우회 가능성을 확인하였다.
 
@@ -110,8 +110,16 @@ nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.i
 nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/webview?url=https%3A%2F%2Fnaver.com%2F%3Fq%3Dinsecureshopapp.com" com.insecureshop
 ```
 
+### 4.3 Access to Protected Components
+
+상세 보고서: [03-access-to-protected-components.md](./findings/03-access-to-protected-components.md)
+
+`PrivateActivity`는 `android:exported="false"`로 선언되어 일반 외부 앱이 직접 접근할 수 없는 보호 대상 컴포넌트였다. 그러나 `WebView2Activity`는 외부에서 전달된 `extra_intent`를 `getParcelableExtra("extra_intent")`로 받은 뒤 검증 없이 `startActivity()`로 실행하고 있었다.
+
+동적 검증은 일반 서드파티 앱 역할의 PoC 애플리케이션을 별도로 만들어 진행하였다. `PrivateActivity`를 직접 호출했을 때는 `SecurityException`이 발생했지만, `WebView2Activity`를 경유해 `extra_intent` 안에 `PrivateActivity` Intent를 넣어 전달했을 때는 내부 화면이 실제로 열렸다. 이를 통해 exported Activity를 통해 protected component에 우회 접근 가능한 구조를 확인하였다.
+
 ## 5. 결론
 
-이번 저장소에서는 `InsecureShop`을 대상으로 Android 앱 보안 분석을 수행하며, 현재 `Hardcoded Credentials`와 `WebView Deeplink URL Validation Issues` 두 가지 항목을 정리하였다. 두 사례를 통해 클라이언트 내부 자격증명 노출과 deeplink 기반 WebView URL 처리 취약점이 어떻게 실제 악용 가능성으로 이어지는지 확인할 수 있었다.
+이번 저장소에서는 `InsecureShop`을 대상으로 Android 앱 보안 분석을 수행하며, 현재 `Hardcoded Credentials`, `WebView Deeplink URL Validation Issues`, `Access to Protected Components` 세 가지 항목을 정리하였다. 세 사례를 통해 클라이언트 내부 자격증명 노출, deeplink 기반 WebView URL 처리 문제, Android 컴포넌트 보호 경계 우회가 각각 어떤 방식으로 실제 악용 가능성으로 이어지는지 확인할 수 있었다.
 
 각 분석은 정적 분석과 동적 검증을 함께 포함하며, 코드 근거와 실제 재현 절차를 함께 정리하는 것을 기준으로 작성하였다.
