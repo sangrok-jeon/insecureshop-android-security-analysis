@@ -85,19 +85,13 @@ nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.i
 
 ## 9. 취약점 테스트
 
-### 1. Deeplink 진입점 확인
+### 1. `/webview` 경로의 검증 코드 확인
 
-![1. Deeplink 진입점 확인](../images/03-weak-host-validation-check/01-manifest-webview-entrypoint.png)
-
-`WebViewActivity`는 외부 URI 기반 deeplink 진입점으로 동작하며, `/webview` 경로에서 전달된 `url` 파라미터가 이후 검증 로직을 거쳐 WebView에 로드된다.
-
-### 2. `/webview` 경로의 검증 코드 확인
-
-![2. `/webview` 경로의 검증 코드 확인](../images/03-weak-host-validation-check/02-webview-path-validation-code.png)
+![1. `/webview` 경로의 검증 코드 확인](../images/03-weak-host-validation-check/02-webview-endswith-code.png)
 
 `/webview` 분기에서는 `url` 파라미터를 추출한 뒤 `endsWith("insecureshopapp.com")` 조건으로만 검증하고 있다. 이 로직은 실제 host가 아닌 전체 문자열 suffix만 보기 때문에 안전한 host 검증으로 볼 수 없다.
 
-### 3. 약한 host 검증 우회 확인
+### 2. 약한 host 검증 우회 확인
 
 사용 명령:
 
@@ -105,6 +99,6 @@ nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.i
 nox_adb shell am start -W -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/webview?url=https%3A%2F%2Fnaver.com%2F%3Fq%3Dinsecureshopapp.com" com.insecureshop
 ```
 
-![3. 약한 host 검증 우회 확인](../images/03-weak-host-validation-check/04-webview-bypass-load-naver.png)
+![2. 약한 host 검증 우회 확인](../images/03-weak-host-validation-check/04-webview-bypass-load-naver.png)
 
 실행 결과 실제 host는 `naver.com`이지만 URL 문자열 끝이 `insecureshopapp.com`으로 끝난다는 이유로 검증을 통과해 WebView가 로드되었다. 이를 통해 weak host validation 우회가 가능함을 검증하였다.
