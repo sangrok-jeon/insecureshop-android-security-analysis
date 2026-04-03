@@ -231,48 +231,48 @@ webview.loadUrl(data);
 
 ### 1. Android Studio 템플릿 선택
 
-![1. Android Studio 템플릿 선택](../images/03-access-to-protected-components/01-android-studio-template.png)
+![1. Android Studio 템플릿 선택](../images/05-access-to-protected-components/01-android-studio-template.png)
 
 PoC 앱은 Android Studio에서 `Empty Views Activity` 템플릿으로 생성하였다. 이번 항목은 일반 외부 앱 관점의 동작을 검증하는 것이 목적이므로, 복잡한 구조 없이 `MainActivity` 하나만 가진 최소 앱으로도 충분했다.
 
 ### 2. PoC 앱 생성 설정
 
-![2. PoC 앱 생성 설정](../images/03-access-to-protected-components/02-android-studio-project-config.png)
+![2. PoC 앱 생성 설정](../images/05-access-to-protected-components/02-android-studio-project-config.png)
 
 프로젝트 이름은 `IntentProxyPoC`로 설정하고, Java 기반의 기본 Activity 프로젝트를 생성하였다. 이 앱은 공격자 역할의 서드파티 애플리케이션으로 사용되며, `Direct Launch`와 `Proxy Launch` 동작만 비교하도록 구성하였다.
 
 ### 3. 보호된 컴포넌트 확인
 
-![3. 보호된 컴포넌트 확인](../images/03-access-to-protected-components/03-manifest-protected-components.png)
+![3. 보호된 컴포넌트 확인](../images/05-access-to-protected-components/03-manifest-protected-components.png)
 
 `AndroidManifest.xml`에서 `PrivateActivity`가 `android:exported="false"`로 선언된 것을 확인하였다. 이는 일반 외부 앱이 직접 접근할 수 없는 내부 전용 Activity라는 뜻이며, 이번 항목의 보호 대상 컴포넌트에 해당한다.
 
 ### 4. 전달자 Activity와 취약 코드 확인
 
-![4. 전달자 Activity와 취약 코드 확인](../images/03-access-to-protected-components/04-webview2-extra-intent-code.png)
+![4. 전달자 Activity와 취약 코드 확인](../images/05-access-to-protected-components/04-webview2-extra-intent-code.png)
 
 `WebView2Activity`는 외부 Intent를 받을 수 있는 진입점이며, 코드상 `getParcelableExtra("extra_intent")`로 embedded Intent를 받은 뒤 이를 검증 없이 `startActivity(extraIntent)`로 실행한다. 이 시점에서 외부 앱이 전달한 Intent가 그대로 내부 Activity 실행에 사용될 수 있다.
 
 ### 5. PoC 앱 핵심 코드 확인
 
-![5. PoC 앱 핵심 코드 확인](../images/03-access-to-protected-components/05-poc-mainactivity-code.png)
+![5. PoC 앱 핵심 코드 확인](../images/05-access-to-protected-components/05-poc-mainactivity-code.png)
 
 PoC 앱의 `MainActivity`는 `PrivateActivity` 직접 실행과 `WebView2Activity` 경유 실행을 각각 버튼으로 분리해 비교한다. 특히 `proxyLaunch()`는 `extra_intent` 안에 `PrivateActivity` Intent를 담아 전달함으로써, 취약한 proxy launch 구조를 그대로 재현한다.
 
 ### 6. Direct Launch 실패 확인
 
-![6. Direct Launch 실패 확인](../images/03-access-to-protected-components/06-direct-launch-failed.png)
+![6. Direct Launch 실패 확인](../images/05-access-to-protected-components/06-direct-launch-failed.png)
 
 PoC 앱에서 `PrivateActivity`를 직접 호출하도록 구현한 결과, 실행 시 `SecurityException`이 발생하였다. 이는 보호 대상 컴포넌트가 일반 외부 앱에 대해 직접 접근 차단 상태임을 보여준다.
 
 ### 7. Proxy Launch 성공 확인
 
-![7. Proxy Launch 성공 확인](../images/03-access-to-protected-components/07-proxy-launch-success.png)
+![7. Proxy Launch 성공 확인](../images/05-access-to-protected-components/07-proxy-launch-success.png)
 
 PoC 앱에서 `WebView2Activity`를 호출하면서 `extra_intent` 안에 `PrivateActivity` Intent를 담아 전달한 결과, 내부 WebView 화면이 실행되었다. 이후 표시된 `ERR_NAME_NOT_RESOLVED`는 `PrivateActivity` 내부 기본 URL 로딩 실패에 해당하며, protected component 우회 실행 자체는 성공했음을 보여준다.
 
 ### 8. PrivateActivity 기본 URL 로드 코드 확인
 
-![8. PrivateActivity 기본 URL 로드 코드 확인](../images/03-access-to-protected-components/08-privateactivity-default-url-code.png)
+![8. PrivateActivity 기본 URL 로드 코드 확인](../images/05-access-to-protected-components/08-privateactivity-default-url-code.png)
 
 `PrivateActivity` 내부에서는 `url` extra가 없을 경우 `https://www.insecureshopapp.com`를 기본값으로 사용하도록 구현되어 있었다. 따라서 우회 실행 후 나타난 WebView 에러 화면은 protected component 접근 실패가 아니라, 실제로 `PrivateActivity`가 실행된 뒤 기본 URL 로딩이 실패한 결과로 해석할 수 있다.

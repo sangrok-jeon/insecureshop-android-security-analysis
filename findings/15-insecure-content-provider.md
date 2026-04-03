@@ -124,24 +124,24 @@ Row: 0 username=shopuser, password=!ns3csh0p
 
 ### 1. Provider Manifest 선언 확인
 
-![1. Provider Manifest 선언 확인](../images/04-insecure-content-provider/01-provider-manifest.png)
+![1. Provider Manifest 선언 확인](../images/15-insecure-content-provider/01-provider-manifest.png)
 
 `InsecureShopProvider`는 `android:exported="true"`로 선언되어 있으며, authority는 `com.insecureshop.provider`였다. 이 설정은 ContentProvider가 외부 요청을 받을 수 있음을 보여주며, 이후 실제 접근 가능성을 동적으로 검증할 필요가 있었다.
 
 ### 2. 접근 URI 등록 확인
 
-![2. 접근 URI 등록 확인](../images/04-insecure-content-provider/02-provider-uri-registration.png)
+![2. 접근 URI 등록 확인](../images/15-insecure-content-provider/02-provider-uri-registration.png)
 
 `onCreate()`에서 `UriMatcher`는 `"com.insecureshop.provider", "insecure"` 경로를 code `100`으로 등록하고 있었다. 이를 통해 `content://com.insecureshop.provider/insecure`가 실제 query 대상 URI임을 확인할 수 있다.
 
 ### 3. query()의 자격증명 반환 확인
 
-![3. query()의 자격증명 반환 확인](../images/04-insecure-content-provider/03-provider-query-credentials.png)
+![3. query()의 자격증명 반환 확인](../images/15-insecure-content-provider/03-provider-query-credentials.png)
 
 `query()`는 `username`, `password` 컬럼을 가진 `MatrixCursor`를 생성하고, `Prefs.INSTANCE.getUsername()`와 `Prefs.INSTANCE.getPassword()` 값을 그대로 채운 뒤 반환한다. 즉 민감한 로그인 정보가 query 결과로 직접 노출되는 구조다.
 
 ### 4. 외부 query 결과 확인
 
-![4. 외부 query 결과 확인](../images/04-insecure-content-provider/04-content-query-result.png)
+![4. 외부 query 결과 확인](../images/15-insecure-content-provider/04-content-query-result.png)
 
 `nox_adb shell content query --uri content://com.insecureshop.provider/insecure` 명령 실행 결과, `shopuser / !ns3csh0p`가 그대로 출력되었다. 이를 통해 외부에서 직접 ContentProvider에 접근하여 저장된 자격증명을 탈취할 수 있음을 검증하였다.
