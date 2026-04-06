@@ -4,7 +4,7 @@
 
 `InsecureShop`의 `WebView2Activity`를 분석한 결과, 외부에서 전달된 `Intent`의 `dataString`을 별도 검증 없이 그대로 `WebView.loadUrl()`에 전달하는 구조를 확인하였다. 이로 인해 외부 앱이나 `adb` 명령을 통해 임의의 URI를 전달하면, 앱 내부 WebView에서 공격자가 원하는 페이지를 직접 로드할 수 있다.
 
-이번 항목은 `AndroidManifest.xml`에서 외부 진입점을 확인한 뒤, `WebView2Activity`의 `Intent data -> loadUrl()` 흐름을 정적 분석하고, `nox_adb shell am start` 명령으로 `https://naver.com`을 전달해 실제 임의 URL 로딩이 가능한지 검증하는 방식으로 진행하였다.
+이번 항목은 `AndroidManifest.xml`에서 외부 진입점을 확인한 뒤, `WebView2Activity`의 `Intent data -> loadUrl()` 흐름을 정적 분석하고, `nox_adb shell am start` 명령으로 GitHub 저장소 페이지 URL을 전달해 실제 임의 외부 URL 로딩이 가능한지 검증하는 방식으로 진행하였다.
 
 ## 2. 취약점 요약
 
@@ -33,8 +33,8 @@
 1. `AndroidManifest.xml`에서 외부에서 호출 가능한 WebView 관련 Activity를 식별하였다.
 2. `WebView2Activity`를 선택해 외부 입력 처리 흐름을 확인하였다.
 3. `Intent.getDataString()`으로 전달받은 값이 `loadUrl()`에 직접 전달되는지 분석하였다.
-4. `nox_adb shell am start` 명령으로 `https://naver.com`을 `dataString`으로 전달하였다.
-5. 앱 내부 WebView에서 `naver.com`이 실제로 로드되는지 확인하였다.
+4. `nox_adb shell am start` 명령으로 GitHub 저장소 페이지 URL을 `dataString`으로 전달하였다.
+5. 앱 내부 WebView에서 해당 외부 페이지가 실제로 로드되는지 확인하였다.
 
 ## 5. 상세 분석
 
@@ -90,11 +90,11 @@ if (!(dataString == null || StringsKt.isBlank(dataString))) {
 외부에서 `WebView2Activity`를 직접 호출하기 위해 아래 명령을 사용하였다.
 
 ```powershell
-nox_adb shell am start -a com.insecureshop.action.WEBVIEW -n com.insecureshop/.WebView2Activity -d "https://naver.com"
+nox_adb shell am start -a com.insecureshop.action.WEBVIEW -n com.insecureshop/.WebView2Activity -d "https://github.com/sangrok-jeon/insecureshop-android-security-analysis/tree/main"
 ```
 
-이 명령은 `Intent action`을 `com.insecureshop.action.WEBVIEW`로 지정하고, `dataString` 자리에 `https://naver.com`을 전달한다.  
-실행 결과 `WebView2Activity`가 열리며 앱 내부 WebView에서 `https://www.naver.com/` 페이지가 실제로 로드되는 것을 확인하였다.
+이 명령은 `Intent action`을 `com.insecureshop.action.WEBVIEW`로 지정하고, `dataString` 자리에 GitHub 저장소 페이지 URL을 전달한다.  
+실행 결과 `WebView2Activity`가 열리며 앱 내부 WebView에서 해당 GitHub 페이지가 실제로 로드되는 것을 확인하였다.
 
 즉 외부에서 전달한 Data URI가 아무 보호 없이 앱 내부 WebView에 그대로 반영되었고, 이를 통해 `Unprotected Data URIs` 취약점이 동적으로 재현되었다.
 
@@ -117,7 +117,7 @@ nox_adb shell am start -a com.insecureshop.action.WEBVIEW -n com.insecureshop/.W
 
 ## 8. 결론
 
-이번 분석에서는 `WebView2Activity`가 외부에서 전달된 `Intent dataString`을 보호 없이 `WebView.loadUrl()`에 전달하는 구조를 확인하였다. 또한 `nox_adb shell am start` 명령으로 `https://naver.com`을 전달한 결과, 앱 내부 WebView에서 해당 페이지가 실제로 로드되는 것을 확인함으로써 `Unprotected Data URIs` 취약점이 재현 가능함을 검증하였다.
+이번 분석에서는 `WebView2Activity`가 외부에서 전달된 `Intent dataString`을 보호 없이 `WebView.loadUrl()`에 전달하는 구조를 확인하였다. 또한 `nox_adb shell am start` 명령으로 GitHub 저장소 페이지 URL을 전달한 결과, 앱 내부 WebView에서 해당 외부 페이지가 실제로 로드되는 것을 확인함으로써 `Unprotected Data URIs` 취약점이 재현 가능함을 검증하였다.
 
 ## 9. 취약점 테스트
 
@@ -137,10 +137,10 @@ nox_adb shell am start -a com.insecureshop.action.WEBVIEW -n com.insecureshop/.W
 
 ![3. adb로 임의 Data URI 전달](../images/06-unprotected-data-uris/03-adb-start-webview2.png)
 
-`nox_adb shell am start` 명령으로 `https://naver.com`을 `WebView2Activity`의 `dataString`으로 전달하였다. 출력 결과에서도 `dat=https://naver.com` 형태로 Data URI가 Activity에 전달되는 것을 확인할 수 있다.
+`nox_adb shell am start` 명령으로 GitHub 저장소 페이지 URL을 `WebView2Activity`의 `dataString`으로 전달하였다. 출력 결과에서도 `dat=https://...` 형태로 외부 Data URI가 Activity에 전달되는 것을 확인할 수 있다.
 
 ### 4. WebView에서 임의 URL 로드 확인
 
 ![4. WebView에서 임의 URL 로드 확인](../images/06-unprotected-data-uris/04-webview2-load-naver.png)
 
-명령 실행 후 `WebView2Activity`가 열리며 앱 내부 WebView에서 `https://www.naver.com/` 페이지가 실제로 로드되었다. 이를 통해 외부에서 전달한 Data URI가 검증 없이 그대로 사용되고 있음을 동적으로 확인하였다.
+명령 실행 후 `WebView2Activity`가 열리며 앱 내부 WebView에서 GitHub 저장소 페이지가 실제로 로드되었다. 이를 통해 외부에서 전달한 Data URI가 검증 없이 그대로 사용되고 있음을 동적으로 확인하였다.
