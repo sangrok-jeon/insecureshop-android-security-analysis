@@ -23,6 +23,7 @@
 | 6 | Unprotected Data URIs | `jadx`, `nox_adb` | [findings/06-unprotected-data-uris.md](./findings/06-unprotected-data-uris.md) |
 | 7 | Theft of Arbitrary Files | `jadx`, `nox_adb` | [findings/07-theft-of-arbitrary-files.md](./findings/07-theft-of-arbitrary-files.md) |
 | 8 | Using Components with Known Vulnerabilities | `jadx`, `Android Studio`, `PoC App` | [findings/08-using-components-with-known-vulnerabilities.md](./findings/08-using-components-with-known-vulnerabilities.md) |
+| 9 | Insecure Broadcast Receiver | `jadx`, `nox_adb` | [findings/09-insecure-broadcast-receiver.md](./findings/09-insecure-broadcast-receiver.md) |
 | 15 | Insecure Content Provider | `jadx`, `nox_adb` | [findings/15-insecure-content-provider.md](./findings/15-insecure-content-provider.md) |
 
 `2`와 `3`은 동일한 `WebViewActivity`의 deeplink 처리 구조에서 함께 발생해 하나의 상세 보고서로 통합했다. `4`는 Android Studio로 제작한 별도 `PoC App`과 `logcat` 검증 결과를 함께 사용해 재현했다.
