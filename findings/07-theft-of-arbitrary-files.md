@@ -103,7 +103,7 @@ OutputStream outputStreamOpenOutputStream = getContentResolver().openOutputStrea
 outputStreamOpenOutputStream.write(bArr, 0, it);
 ```
 
-이 코드를 초보자 관점에서 풀어 쓰면 다음과 같다.
+코드 흐름을 순서대로 보면 다음과 같다.
 
 1. 외부 저장소 루트(`/sdcard`)를 가져온다.
 2. 그 아래 `insecureshop` 폴더를 만든다.

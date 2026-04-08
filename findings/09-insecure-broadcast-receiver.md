@@ -4,7 +4,7 @@
 
 `InsecureShop`를 분석하던 중 `AboutUsActivity`가 `exported=true` 상태로 외부에서 실행 가능하다는 점을 확인하였다. 처음에는 단순한 정보성 화면처럼 보였지만, `onCreate()`를 따라가 보니 이 Activity는 실행 직후 `CustomReceiver`를 동적으로 등록하고 있었고, 해당 리시버는 외부 브로드캐스트에서 전달된 `web_url` 값을 읽어 `WebView2Activity`를 실행하도록 구성되어 있었다.
 
-즉 구조를 쉽게 풀어보면 다음과 같다.
+즉 구조를 단계별로 정리하면 다음과 같다.
 
 1. 외부에서 `AboutUsActivity`를 실행
 2. `AboutUsActivity`가 `CustomReceiver`를 등록
@@ -70,7 +70,7 @@ this.receiver = customReceiver;
 registerReceiver(customReceiver, new IntentFilter("com.insecureshop.CUSTOM_INTENT"));
 ```
 
-이 코드를 초보자 기준으로 풀어보면 다음과 같다.
+코드 흐름을 순서대로 보면 다음과 같다.
 
 - `AboutUsActivity`가 열리면 `CustomReceiver` 객체를 하나 만들고
 - 액션이 `com.insecureshop.CUSTOM_INTENT`인 broadcast를 받도록 등록한다.
