@@ -193,7 +193,7 @@ PoC App에서는 다음 사항을 준비하였다.
 
 ### 6.3 검증 결과
 
-PoC App 실행 후 로컬 HTTP 수신 서버에는 multipart body 형태로 `Prefs.xml` 내용이 수신되었다. 수신 데이터 안에는 아래와 같이 실제 설정 값이 포함되어 있었다.
+PoC App 실행 후 로컬 HTTP 수신 서버에는 `POST /upload` 요청이 도착했고, `Content-Type`은 `multipart/form-data`로 확인되었다. 이후 body 안에서 `Prefs.xml` 내용이 실제로 수신되는 것을 확인하였다. 수신 데이터 안에는 아래와 같이 실제 설정 값이 포함되어 있었다.
 
 - `<string name="password">!ns3csh0p</string>`
 - 제품 목록 및 기타 앱 내부 설정 데이터
@@ -301,14 +301,20 @@ PoC App에는 `INTERNET` 권한과 `usesCleartextTraffic="true"`가 적용되어
 
 PoC App은 `UploadTaskParameters`, `HttpUploadTaskParameters`, `UploadFile`을 구성한 뒤 `Intent("net.gotev.uploadservice.action.upload")`로 `InsecureShop`의 `UploadService`를 직접 호출하도록 만들었다. 이 과정에서 `taskClass`는 `net.gotev.uploadservice.MultipartUploadTask`로 설정되었고, 대상 파일은 `Prefs.xml`, 목적지는 테스트용 로컬 수신 서버로 지정하였다.
 
-### 13. 로컬 수신 서버에서 Prefs.xml 내용이 실제로 전달된 모습
+### 13. 로컬 수신 서버가 POST 요청과 multipart 헤더를 수신한 모습
 
-![13. 로컬 수신 서버에서 Prefs.xml 내용이 실제로 전달된 모습](../images/08-Using%20Components%20with%20Known%20Vulnerabilities/13-receiver-prefs-content.png)
+![13. 로컬 수신 서버가 POST 요청과 multipart 헤더를 수신한 모습](../images/08-Using%20Components%20with%20Known%20Vulnerabilities/13-server-post-log.png)
+
+테스트용 `upload.py` 서버 로그에서 `POST /upload` 요청이 실제로 도착했고, `content-type: multipart/form-data; boundary=...`가 기록되었다. 이 로그는 `MultipartUploadTask`가 구성한 multipart 요청이 실제 네트워크로 전송되었음을 보여준다.
+
+### 14. 로컬 수신 서버에서 Prefs.xml 내용이 실제로 전달된 모습
+
+![14. 로컬 수신 서버에서 Prefs.xml 내용이 실제로 전달된 모습](../images/08-Using%20Components%20with%20Known%20Vulnerabilities/14-receiver-prefs-content.png)
 
 로컬 HTTP 수신 서버에는 multipart body 형태로 `Prefs.xml` 내용이 전달되었고, 그 안에서 `password`, 제품 목록 등 앱 내부 설정 값이 실제로 확인되었다. 이 결과는 실제 PoC가 `MultipartUploadTask` 경로를 통해 동작했음을 뒷받침한다.
 
-### 14. 수신 body가 로컬 파일로 저장된 모습
+### 15. 수신 body가 로컬 파일로 저장된 모습
 
-![14. 수신 body가 로컬 파일로 저장된 모습](../images/08-Using%20Components%20with%20Known%20Vulnerabilities/14-exfiltrated-file-bin.png)
+![15. 수신 body가 로컬 파일로 저장된 모습](../images/08-Using%20Components%20with%20Known%20Vulnerabilities/15-exfiltrated-file-bin.png)
 
 수신된 요청 body는 로컬 PC에 `exfiltrated_file.bin`으로 저장되었다. 이는 `InsecureShop` 내부 파일이 외부 수신 환경으로 전송되었음을 보여주는 최종 증적이다.
