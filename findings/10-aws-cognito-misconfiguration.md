@@ -56,6 +56,10 @@
 
 ### 5.1 `nuclei` 설치 및 템플릿 준비
 
+GitHub 릴리스 페이지에서 Windows용 `nuclei_3.7.1_windows_amd64.zip` 파일을 선택하였다.
+
+![nuclei GitHub 릴리스에서 Windows 바이너리 확인](../images/10-AWS%20Cognito%20Misconfiguration/01-nuclei-github-release-assets.png)
+
 `nuclei`를 설치한 뒤 버전과 템플릿 업데이트 상태를 확인하였다.
 
 ![nuclei 설치 및 템플릿 업데이트 확인](../images/10-AWS%20Cognito%20Misconfiguration/2026-04-08%2017%2022%2012.png)
@@ -137,6 +141,10 @@ aws cognito-identity get-credentials-for-identity --identity-id "us-east-1:15f01
 ```
 
 임시 자격증명 원본 출력에는 실제 키와 세션 토큰이 포함되므로 본문 증적에는 직접 포함하지 않았다. 대신 발급된 임시 자격증명을 PowerShell 환경변수로 설정한 뒤 `sts get-caller-identity`를 실행하여 해당 자격증명이 어떤 역할로 동작하는지 확인하였다.
+
+![get-credentials-for-identity로 임시 자격증명 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/09-get-credentials-redacted.png)
+
+![PowerShell 환경변수로 임시 자격증명 설정](../images/10-AWS%20Cognito%20Misconfiguration/10-powershell-env-vars-redacted.png)
 
 ![sts get-caller-identity로 Cognito unauth role 확인](../images/10-AWS%20Cognito%20Misconfiguration/2026-04-10%2013%2027%2009.png)
 
@@ -230,6 +238,10 @@ aws s3api get-object --bucket geolocation-pocfiles --key geo.html geo.html
 
 ### 1. nuclei 설치 및 템플릿 업데이트 확인
 
+![1. nuclei GitHub 릴리스에서 Windows 바이너리 확인](../images/10-AWS%20Cognito%20Misconfiguration/01-nuclei-github-release-assets.png)
+
+GitHub 릴리스 페이지에서 Windows용 `nuclei_3.7.1_windows_amd64.zip` 파일을 확인한 뒤 설치하였다.
+
 ![1. nuclei 설치 및 템플릿 업데이트 확인](../images/10-AWS%20Cognito%20Misconfiguration/2026-04-08%2017%2022%2012.png)
 
 `nuclei v3.7.1`이 정상 실행되었고, `nuclei-templates`도 설치 및 업데이트되었다.
@@ -277,6 +289,14 @@ aws s3api get-object --bucket geolocation-pocfiles --key geo.html geo.html
 하드코딩된 Identity Pool ID를 이용해 `IdentityId`를 발급받을 수 있었다.
 
 ### 9. 임시 자격증명의 STS 역할 확인
+
+![9. get-credentials-for-identity로 임시 자격증명 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/09-get-credentials-redacted.png)
+
+`get-credentials-for-identity` 호출 결과 `AccessKeyId`, `SecretKey`, `SessionToken`이 발급되었다. 원본 자격증명 값은 민감정보이므로 증적 이미지에서는 마스킹하였다.
+
+![10. PowerShell 환경변수로 임시 자격증명 설정](../images/10-AWS%20Cognito%20Misconfiguration/10-powershell-env-vars-redacted.png)
+
+발급된 임시 자격증명은 현재 PowerShell 세션의 환경변수로 설정한 뒤 후속 AWS CLI 명령에 사용하였다.
 
 ![9. sts get-caller-identity로 Cognito unauth role 확인](../images/10-AWS%20Cognito%20Misconfiguration/2026-04-10%2013%2027%2009.png)
 
