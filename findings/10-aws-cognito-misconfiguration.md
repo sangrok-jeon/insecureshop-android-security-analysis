@@ -54,17 +54,9 @@
 
 ## 5. 상세 분석
 
-### 5.1 `nuclei` 설치 및 템플릿 준비
+### 5.1 `nuclei` Cognito 탐지 템플릿 확인
 
-GitHub 릴리스 페이지에서 Windows용 `nuclei_3.7.1_windows_amd64.zip` 파일을 선택하였다.
-
-![nuclei GitHub 릴리스에서 Windows 바이너리 확인](../images/10-AWS%20Cognito%20Misconfiguration/01-nuclei-github-release-assets.png)
-
-`nuclei`를 설치한 뒤 버전과 템플릿 업데이트 상태를 확인하였다.
-
-![nuclei 설치 및 템플릿 업데이트 확인](../images/10-AWS%20Cognito%20Misconfiguration/02-nuclei-version-template-update.png)
-
-이후 `nuclei-templates` 안에서 AWS Cognito Pool ID를 탐지하는 file template를 확인하였다.
+`nuclei-templates` 안에서 AWS Cognito Pool ID를 탐지하는 file template를 확인하였다.
 
 ![aws-cognito.yaml 템플릿 위치 확인](../images/10-AWS%20Cognito%20Misconfiguration/05-aws-cognito-template-path.png)
 
@@ -236,65 +228,49 @@ aws s3api get-object --bucket geolocation-pocfiles --key geo.html geo.html
 
 ## 9. 취약점 테스트
 
-### 1. nuclei 설치 및 템플릿 업데이트 확인
+### 1. aws-cognito.yaml 템플릿 위치 확인
 
-![1. nuclei GitHub 릴리스에서 Windows 바이너리 확인](../images/10-AWS%20Cognito%20Misconfiguration/01-nuclei-github-release-assets.png)
-
-GitHub 릴리스 페이지에서 Windows용 `nuclei_3.7.1_windows_amd64.zip` 파일을 확인한 뒤 설치하였다.
-
-![1. nuclei 설치 및 템플릿 업데이트 확인](../images/10-AWS%20Cognito%20Misconfiguration/02-nuclei-version-template-update.png)
-
-`nuclei v3.7.1`이 정상 실행되었고, `nuclei-templates`도 설치 및 업데이트되었다.
-
-### 2. aws-cognito.yaml 템플릿 위치 확인
-
-![2. aws-cognito.yaml 템플릿 위치 확인](../images/10-AWS%20Cognito%20Misconfiguration/05-aws-cognito-template-path.png)
+![1. aws-cognito.yaml 템플릿 위치 확인](../images/10-AWS%20Cognito%20Misconfiguration/05-aws-cognito-template-path.png)
 
 `file/keys/amazon/aws-cognito.yaml` 템플릿을 사용해 Cognito Identity Pool ID 패턴을 탐지할 수 있었다.
 
-### 3. APK Easy Tool로 InsecureShop 디컴파일
+### 2. APK Easy Tool로 InsecureShop 디컴파일
 
-![3. APK Easy Tool 디컴파일 성공](../images/10-AWS%20Cognito%20Misconfiguration/03-apk-easy-tool-decompile-success.png)
+![2. APK Easy Tool 디컴파일 성공](../images/10-AWS%20Cognito%20Misconfiguration/03-apk-easy-tool-decompile-success.png)
 
 `InsecureShop.apk`를 디컴파일하여 `res`, `smali`, `AndroidManifest.xml` 등 정적 분석 가능한 파일 구조를 확보하였다.
 
-### 4. nuclei로 Cognito Pool ID 탐지
+### 3. nuclei로 Cognito Pool ID 탐지
 
-![4. nuclei로 Cognito Identity Pool ID 탐지](../images/10-AWS%20Cognito%20Misconfiguration/06-nuclei-cognito-pool-detection.png)
+![3. nuclei로 Cognito Identity Pool ID 탐지](../images/10-AWS%20Cognito%20Misconfiguration/06-nuclei-cognito-pool-detection.png)
 
 `res\values\strings.xml`에서 Cognito Identity Pool ID 형식의 문자열이 탐지되었다.
 
-### 5. strings.xml에서 aws_Identity_pool_ID 확인
+### 4. strings.xml에서 aws_Identity_pool_ID 확인
 
-![5. strings.xml의 aws_Identity_pool_ID 확인](../images/10-AWS%20Cognito%20Misconfiguration/07-strings-xml-identity-pool-id.png)
+![4. strings.xml의 aws_Identity_pool_ID 확인](../images/10-AWS%20Cognito%20Misconfiguration/07-strings-xml-identity-pool-id.png)
 
 `aws_Identity_pool_ID` 리소스 값으로 `us-east-1:7e9426f7-42af-4717-8689-00a9a4b65c1c`가 포함되어 있었다.
 
-### 6. R.string 리소스 등록 확인
+### 5. R.string 리소스 등록 확인
 
-![6. R.string에 aws_Identity_pool_ID 등록 확인](../images/10-AWS%20Cognito%20Misconfiguration/08-r-string-identity-pool-resource.png)
+![5. R.string에 aws_Identity_pool_ID 등록 확인](../images/10-AWS%20Cognito%20Misconfiguration/08-r-string-identity-pool-resource.png)
 
 `aws_Identity_pool_ID`가 `R.string` 리소스로도 등록되어 있어 앱 코드에서 참조 가능한 리소스임을 확인하였다.
 
-### 7. AWS CLI 설치 확인
+### 6. Cognito get-id 호출로 IdentityId 발급
 
-![7. AWS CLI 버전 확인](../images/10-AWS%20Cognito%20Misconfiguration/09-aws-cli-version.png)
-
-후속 검증을 위해 AWS CLI가 정상 설치되어 있는지 확인하였다.
-
-### 8. Cognito get-id 호출로 IdentityId 발급
-
-![8. get-id로 IdentityId 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/10-cognito-get-id-identityid.png)
+![6. get-id로 IdentityId 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/10-cognito-get-id-identityid.png)
 
 하드코딩된 Identity Pool ID를 이용해 `IdentityId`를 발급받을 수 있었다.
 
-### 9. 임시 자격증명의 STS 역할 확인
+### 7. 임시 자격증명의 STS 역할 확인
 
-![9. get-credentials-for-identity로 임시 자격증명 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/11-get-credentials-redacted.png)
+![7. get-credentials-for-identity로 임시 자격증명 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/11-get-credentials-redacted.png)
 
 `get-credentials-for-identity` 호출 결과 `AccessKeyId`, `SecretKey`, `SessionToken`이 발급되었다. 원본 자격증명 값은 민감정보이므로 증적 이미지에서는 마스킹하였다.
 
-![10. PowerShell 환경변수로 임시 자격증명 설정](../images/10-AWS%20Cognito%20Misconfiguration/12-powershell-env-vars-redacted.png)
+![8. PowerShell 환경변수로 임시 자격증명 설정](../images/10-AWS%20Cognito%20Misconfiguration/12-powershell-env-vars-redacted.png)
 
 발급된 임시 자격증명은 현재 PowerShell 세션의 환경변수로 설정한 뒤 후속 AWS CLI 명령에 사용하였다.
 
@@ -302,24 +278,24 @@ GitHub 릴리스 페이지에서 Windows용 `nuclei_3.7.1_windows_amd64.zip` 파
 
 발급받은 임시 자격증명은 `Cognito_InsecureshopUnauth_Role`로 동작하였다.
 
-### 10. S3 버킷 목록 조회
+### 8. S3 버킷 목록 조회
 
-![10. aws s3 ls로 버킷 목록 조회](../images/10-AWS%20Cognito%20Misconfiguration/14-s3-bucket-list.png)
+![8. aws s3 ls로 버킷 목록 조회](../images/10-AWS%20Cognito%20Misconfiguration/14-s3-bucket-list.png)
 
 임시 자격증명으로 `aws s3 ls`를 실행한 결과 여러 S3 버킷 목록이 조회되었다.
 
-### 11. 버킷 내부 객체 목록 조회
+### 9. 버킷 내부 객체 목록 조회
 
-![11. elasticbeanstalk 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/16-elasticbeanstalk-bucket-objects.png)
+![9. elasticbeanstalk 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/16-elasticbeanstalk-bucket-objects.png)
 
-![12. geolocation-pocfiles 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/17-geolocation-pocfiles-objects.png)
+![10. geolocation-pocfiles 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/17-geolocation-pocfiles-objects.png)
 
 두 버킷에서 내부 객체 목록을 확인할 수 있었다.
 
-### 12. S3 객체 다운로드 및 내용 확인
+### 10. S3 객체 다운로드 및 내용 확인
 
-![13. s3api get-object로 geo.html 다운로드](../images/10-AWS%20Cognito%20Misconfiguration/18-s3-get-object-geo-html.png)
+![11. s3api get-object로 geo.html 다운로드](../images/10-AWS%20Cognito%20Misconfiguration/18-s3-get-object-geo-html.png)
 
-![14. geo.html 내용 확인](../images/10-AWS%20Cognito%20Misconfiguration/19-geo-html-content.png)
+![12. geo.html 내용 확인](../images/10-AWS%20Cognito%20Misconfiguration/19-geo-html-content.png)
 
 `geolocation-pocfiles` 버킷의 `geo.html` 객체를 다운로드하고 로컬에서 내용을 확인하였다. 이를 통해 S3 객체 읽기 권한까지 검증하였다.
