@@ -27,7 +27,7 @@
 |---|---|
 | 대상 앱 | `InsecureShop` |
 | 실행 환경 | `Nox` |
-| 운영체제 | Android |
+| 운영체제 | `Android` |
 | 정적 분석 | `jadx` |
 | 동적 검증 | `adb shell am start` |
 

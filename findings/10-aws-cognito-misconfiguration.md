@@ -34,7 +34,7 @@
 | 항목 | 내용 |
 |---|---|
 | 대상 앱 | `InsecureShop` |
-| 운영체제 | Android |
+| 운영체제 | `Android` |
 | 디컴파일 도구 | `APK Easy Tool` |
 | 정적 탐지 | `nuclei v3.7.1`, `aws-cognito.yaml` |
 | 정적 확인 | `jadx`, `resources.arsc:/res/values/strings.xml` |
