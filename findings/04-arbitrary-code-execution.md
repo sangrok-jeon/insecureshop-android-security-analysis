@@ -13,7 +13,7 @@
 | 취약점명 | `Arbitrary Code Execution via third-party package contexts` |
 | 취약점 유형 | 약한 패키지명 검증을 통한 동적 코드 로딩 및 실행 |
 | 영향 | 공격자가 설치한 앱의 코드를 `InsecureShop`가 직접 로드 및 실행할 수 있음 |
-| 분석 도구 | `jadx`, `Android Studio`, `nox_adb`, `Nox` |
+| 분석 도구 | `jadx`, `Android Studio`, `adb` |
 | 핵심 컴포넌트 | `LoginActivity` |
 
 ## 3. 분석 환경
@@ -24,7 +24,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | `Android Studio`, `nox_adb` |
+| 동적 검증 | `Android Studio`, `adb` |
 
 ## 4. 분석 방법
 

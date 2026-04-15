@@ -22,7 +22,7 @@
 | 취약점명 | `Insecure Broadcast Receiver` |
 | 취약점 유형 | 동적으로 등록된 BroadcastReceiver가 외부 입력을 검증 없이 WebView 실행으로 연결 |
 | 영향 | 외부 앱 또는 `adb`를 통해 앱 내부 WebView에 임의 URL을 로드할 수 있음 |
-| 분석 도구 | `jadx`, `nox_adb`, `Nox` |
+| 분석 도구 | `jadx`, `adb` |
 | 핵심 컴포넌트 | `AboutUsActivity`, `CustomReceiver`, `WebView2Activity` |
 
 ## 3. 분석 환경
@@ -33,7 +33,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | `nox_adb shell am start`, `nox_adb shell am broadcast` |
+| 동적 검증 | `adb shell am start`, `adb shell am broadcast` |
 
 ## 4. 분석 방법
 

@@ -13,7 +13,7 @@
 | 취약점명 | `Theft of Arbitrary Files` |
 | 취약점 유형 | 외부에서 전달된 파일 경로를 신뢰하고 앱 내부 파일을 외부 저장소로 복사 |
 | 영향 | 앱 로컬 저장소의 임의 파일이 외부 저장소로 유출될 수 있음 |
-| 분석 도구 | `jadx`, `nox_adb`, `Nox` |
+| 분석 도구 | `jadx`, `adb` |
 | 핵심 컴포넌트 | `ChooserActivity` |
 
 ## 3. 분석 환경
@@ -24,7 +24,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | `nox_adb shell am start`, `nox_adb shell head` |
+| 동적 검증 | `adb shell am start`, `adb shell head` |
 
 ## 4. 분석 방법
 

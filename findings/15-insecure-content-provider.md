@@ -13,7 +13,7 @@
 | 취약점명 | `Insecure Content Provider` |
 | 취약점 유형 | 민감정보를 직접 반환하는 exported ContentProvider |
 | 영향 | 외부에서 앱 내부 사용자명/비밀번호 탈취 가능 |
-| 분석 도구 | `jadx`, `nox_adb`, `Nox` |
+| 분석 도구 | `jadx`, `adb` |
 | 핵심 컴포넌트 | `InsecureShopProvider` |
 
 ## 3. 분석 환경
@@ -24,7 +24,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | `nox_adb shell content query` |
+| 동적 검증 | `adb shell content query` |
 
 ## 4. 분석 방법
 

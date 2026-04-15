@@ -18,7 +18,7 @@
 | 취약점명 | `Insufficient URL Validation`, `Weak Host Validation Check` |
 | 취약점 유형 | Deeplink 기반 WebView URL 처리 취약점 |
 | 영향 | 임의 URL 로드 가능, 허술한 검증 우회 가능 |
-| 분석 도구 | `jadx`, `nox_adb`, `Nox` |
+| 분석 도구 | `jadx`, `adb` |
 | 핵심 컴포넌트 | `WebViewActivity` |
 
 ## 3. 분석 환경
@@ -29,7 +29,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | `nox_adb shell am start` |
+| 동적 검증 | `adb shell am start` |
 
 ## 4. 접근 방식
 
