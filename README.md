@@ -2,7 +2,9 @@
 
 ## 1. 프로젝트 개요
 
-`InsecureShop`은 로그인 로직, WebView, Android 컴포넌트, Content Provider, 동적 코드 로딩 등 다양한 모바일 보안 취약점을 포함한 학습용 애플리케이션이다. 이 저장소는 공식 문제 번호 기준으로 취약점을 분석하고, 코드 근거와 동적 검증 결과를 포트폴리오 형식으로 정리한 프로젝트다.
+`InsecureShop`은 Optiv가 공개한 intentionally vulnerable Android 애플리케이션으로, 로그인 로직, WebView, Android 컴포넌트, Content Provider, 동적 코드 로딩 등 다양한 모바일 보안 이슈를 포함한다. 이 저장소는 공식 문제 번호를 기준으로 각 취약점의 코드 근거와 동적 검증 결과를 정리한다.
+
+참조: [optiv/InsecureShop](https://github.com/optiv/InsecureShop)
 
 ## 2. 분석 환경
 
