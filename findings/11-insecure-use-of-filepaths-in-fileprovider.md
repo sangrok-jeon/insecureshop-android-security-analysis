@@ -17,7 +17,7 @@
 | 취약점명 | `Insecure use of FilePaths in FileProvider` |
 | 취약점 유형 | 과도한 `FileProvider` 경로 설정과 URI 권한 중계 |
 | 영향 | 외부 앱이 앱 내부 파일 URI에 대한 읽기 권한을 획득해 민감 파일을 읽을 수 있음 |
-| 분석 도구 | `APK Easy Tool`, `jadx`, `Android Studio`, `nox_adb`, `logcat` |
+| 분석 도구 | `APK Easy Tool`, `jadx`, `Android Studio`, `nox_adb` |
 | 핵심 컴포넌트 | `FileProvider`, `provider_paths.xml`, `ResultActivity` |
 | 검증 대상 파일 | `/data/data/com.insecureshop/shared_prefs/Prefs.xml` |
 
@@ -28,7 +28,7 @@
 | 대상 앱 | `InsecureShop` |
 | 실행 환경 | `Nox` |
 | 정적 분석 | `APK Easy Tool`, `jadx` |
-| 동적 검증 | `Android Studio`, `PoC App`, `nox_adb`, `logcat` |
+| 동적 검증 | `Android Studio`, `PoC App`, `nox_adb` |
 | 검증 대상 컴포넌트 | `androidx.core.content.FileProvider`, `com.insecureshop.ResultActivity` |
 
 ## 4. 분석 방법

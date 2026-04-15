@@ -24,7 +24,7 @@
 | 실행 환경 | `Nox` |
 | 운영체제 | Android |
 | 정적 분석 | `jadx` |
-| 동적 검증 | `Android Studio`, `nox_adb logcat` |
+| 동적 검증 | `Android Studio`, `nox_adb` |
 
 ## 4. 분석 방법
 
