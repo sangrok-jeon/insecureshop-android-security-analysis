@@ -29,4 +29,5 @@
 | 10 | AWS Cognito Misconfiguration | `APK Easy Tool`, `nuclei`, `AWS CLI` | [findings/10-aws-cognito-misconfiguration.md](./findings/10-aws-cognito-misconfiguration.md) |
 | 11 | Insecure use of FilePaths in FileProvider | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/11-insecure-use-of-filepaths-in-fileprovider.md](./findings/11-insecure-use-of-filepaths-in-fileprovider.md) |
 | 12 | Use of Implicit Intent to Send a Broadcast with Sensitive Data | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md](./findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md) |
+| 13 | Intercepting Implicit intent to load arbitrary URL | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md](./findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md) |
 | 15 | Insecure Content Provider | `jadx`, `adb` | [findings/15-insecure-content-provider.md](./findings/15-insecure-content-provider.md) |
