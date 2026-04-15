@@ -27,4 +27,6 @@
 | 8 | Using Components with Known Vulnerabilities | `jadx`, `Android Studio`, `PoC App` | [findings/08-using-components-with-known-vulnerabilities.md](./findings/08-using-components-with-known-vulnerabilities.md) |
 | 9 | Insecure Broadcast Receiver | `jadx`, `nox_adb` | [findings/09-insecure-broadcast-receiver.md](./findings/09-insecure-broadcast-receiver.md) |
 | 10 | AWS Cognito Misconfiguration | `APK Easy Tool`, `nuclei`, `AWS CLI` | [findings/10-aws-cognito-misconfiguration.md](./findings/10-aws-cognito-misconfiguration.md) |
+| 11 | Insecure use of FilePaths in FileProvider | `APK Easy Tool`, `jadx`, `Android Studio`, `PoC App` | [findings/11-insecure-use-of-filepaths-in-fileprovider.md](./findings/11-insecure-use-of-filepaths-in-fileprovider.md) |
+| 12 | Use of Implicit Intent to Send a Broadcast with Sensitive Data | `APK Easy Tool`, `jadx`, `Android Studio`, `PoC App` | [findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md](./findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md) |
 | 15 | Insecure Content Provider | `jadx`, `nox_adb` | [findings/15-insecure-content-provider.md](./findings/15-insecure-content-provider.md) |
