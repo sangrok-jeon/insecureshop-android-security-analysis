@@ -32,3 +32,4 @@
 | 13 | Intercepting Implicit intent to load arbitrary URL | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md](./findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md) |
 | 14 | Insecure Implementation of SetResult in Exported Activity | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/14-insecure-implementation-of-setresult-in-exported-activity.md](./findings/14-insecure-implementation-of-setresult-in-exported-activity.md) |
 | 15 | Insecure Content Provider | `jadx`, `adb` | [findings/15-insecure-content-provider.md](./findings/15-insecure-content-provider.md) |
+| 16 | Lack of SSL Certificate Validation | `APK Easy Tool`, `jadx`, `adb` | [findings/16-lack-of-ssl-certificate-validation.md](./findings/16-lack-of-ssl-certificate-validation.md) |
