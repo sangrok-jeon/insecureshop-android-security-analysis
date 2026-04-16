@@ -13,7 +13,7 @@
 | 취약점명 | `Intercepting Implicit intent to load arbitrary URL` |
 | 취약점 유형 | 암시적 인텐트를 통한 Activity Hijacking |
 | 영향 | 외부 앱이 동일 action을 등록해 Activity 실행 흐름을 가로채고 전달된 `url` 값을 수신할 수 있음 |
-| 분석 도구 | `APK Easy Tool`, `jadx`, `Android Studio`, `adb` |
+| 분석 도구 | `jadx`, `Android Studio`, `adb` |
 | 핵심 컴포넌트 | `ProductAdapter`, `ProductListActivity`, `ProductDetailBroadCast`, `WebView2Activity` |
 | 검증 데이터 | `url = https://www.insecureshopapp.com/` |
 
@@ -24,7 +24,7 @@
 | 대상 앱 | `InsecureShop` |
 | 실행 환경 | `Nox` |
 | 운영체제 | `Android` |
-| 정적 분석 | `APK Easy Tool`, `jadx` |
+| 정적 분석 | `jadx` |
 | 동적 검증 | `Android Studio`, `PoC App`, `adb` |
 | 검증 대상 액션 | `com.insecureshop.action.PRODUCT_DETAIL`, `com.insecureshop.action.WEBVIEW` |
 

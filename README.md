@@ -51,15 +51,15 @@
 | 8 | Using Components with Known Vulnerabilities | `jadx`, `Android Studio`, `PoC App` | [findings/08-using-components-with-known-vulnerabilities.md](./findings/08-using-components-with-known-vulnerabilities.md) |
 | 9 | Insecure Broadcast Receiver | `jadx`, `adb` | [findings/09-insecure-broadcast-receiver.md](./findings/09-insecure-broadcast-receiver.md) |
 | 10 | AWS Cognito Misconfiguration | `APK Easy Tool`, `nuclei`, `AWS CLI` | [findings/10-aws-cognito-misconfiguration.md](./findings/10-aws-cognito-misconfiguration.md) |
-| 11 | Insecure use of FilePaths in FileProvider | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/11-insecure-use-of-filepaths-in-fileprovider.md](./findings/11-insecure-use-of-filepaths-in-fileprovider.md) |
-| 12 | Use of Implicit Intent to Send a Broadcast with Sensitive Data | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md](./findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md) |
-| 13 | Intercepting Implicit intent to load arbitrary URL | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md](./findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md) |
-| 14 | Insecure Implementation of SetResult in Exported Activity | `APK Easy Tool`, `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/14-insecure-implementation-of-setresult-in-exported-activity.md](./findings/14-insecure-implementation-of-setresult-in-exported-activity.md) |
+| 11 | Insecure use of FilePaths in FileProvider | `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/11-insecure-use-of-filepaths-in-fileprovider.md](./findings/11-insecure-use-of-filepaths-in-fileprovider.md) |
+| 12 | Use of Implicit Intent to Send a Broadcast with Sensitive Data | `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md](./findings/12-use-of-implicit-intent-to-send-a-broadcast-with-sensitive-data.md) |
+| 13 | Intercepting Implicit intent to load arbitrary URL | `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md](./findings/13-intercepting-implicit-intent-to-load-arbitrary-url.md) |
+| 14 | Insecure Implementation of SetResult in Exported Activity | `jadx`, `Android Studio`, `adb`, `PoC App` | [findings/14-insecure-implementation-of-setresult-in-exported-activity.md](./findings/14-insecure-implementation-of-setresult-in-exported-activity.md) |
 | 15 | Insecure Content Provider | `jadx`, `adb` | [findings/15-insecure-content-provider.md](./findings/15-insecure-content-provider.md) |
-| 16 | Lack of SSL Certificate Validation | `APK Easy Tool`, `jadx`, `adb` | [findings/16-lack-of-ssl-certificate-validation.md](./findings/16-lack-of-ssl-certificate-validation.md) |
-| 17 | Insecure WebView Properties Enabled | `APK Easy Tool`, `jadx`, `adb`, `python http.server` | [findings/17-insecure-webview-properties-enabled.md](./findings/17-insecure-webview-properties-enabled.md) |
-| 18 | Insecure Data Storage | `APK Easy Tool`, `jadx`, `adb` | [findings/18-insecure-data-storage.md](./findings/18-insecure-data-storage.md) |
-| 19 | Insecure Logging | `APK Easy Tool`, `jadx`, `adb logcat` | [findings/19-insecure-logging.md](./findings/19-insecure-logging.md) |
+| 16 | Lack of SSL Certificate Validation | `jadx`, `adb` | [findings/16-lack-of-ssl-certificate-validation.md](./findings/16-lack-of-ssl-certificate-validation.md) |
+| 17 | Insecure WebView Properties Enabled | `jadx`, `adb`, `python http.server` | [findings/17-insecure-webview-properties-enabled.md](./findings/17-insecure-webview-properties-enabled.md) |
+| 18 | Insecure Data Storage | `jadx`, `adb` | [findings/18-insecure-data-storage.md](./findings/18-insecure-data-storage.md) |
+| 19 | Insecure Logging | `jadx`, `adb logcat` | [findings/19-insecure-logging.md](./findings/19-insecure-logging.md) |
 
 ## 5. 참고 자료
 

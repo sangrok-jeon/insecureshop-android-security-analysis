@@ -13,7 +13,7 @@
 | 취약점명 | `Lack of SSL Certificate Validation` |
 | 취약점 유형 | WebView SSL 오류 무시 |
 | 영향 | 신뢰할 수 없는 인증서가 제시되어도 WebView가 연결을 계속 진행하여 트래픽 도청 또는 변조 가능 |
-| 분석 도구 | `APK Easy Tool`, `jadx`, `adb` |
+| 분석 도구 | `jadx`, `adb` |
 | 핵심 컴포넌트 | `WebViewActivity`, `CustomWebViewClient` |
 | 검증 URL | `https://self-signed.badssl.com/` |
 
@@ -24,7 +24,7 @@
 | 대상 앱 | `InsecureShop` |
 | 실행 환경 | `Nox` |
 | 운영체제 | `Android` |
-| 정적 분석 | `APK Easy Tool`, `jadx` |
+| 정적 분석 | `jadx` |
 | 동적 검증 | `adb` |
 | 검증 대상 컴포넌트 | `com.insecureshop.WebViewActivity` |
 

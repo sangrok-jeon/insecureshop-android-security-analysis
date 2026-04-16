@@ -13,7 +13,7 @@
 | 취약점명 | `Use of Implicit Intent to Send a Broadcast with Sensitive Data` |
 | 취약점 유형 | 민감 데이터가 포함된 암시적 브로드캐스트 전송 |
 | 영향 | 외부 앱이 동일한 action을 등록해 저장된 자격증명을 수신할 수 있음 |
-| 분석 도구 | `APK Easy Tool`, `jadx`, `Android Studio`, `adb` |
+| 분석 도구 | `jadx`, `Android Studio`, `adb` |
 | 핵심 컴포넌트 | `AboutUsActivity`, `Prefs`, `BroadcastReceiver` |
 | 전송 데이터 | `username`, `password` |
 
@@ -24,7 +24,7 @@
 | 대상 앱 | `InsecureShop` |
 | 실행 환경 | `Nox` |
 | 운영체제 | `Android` |
-| 정적 분석 | `APK Easy Tool`, `jadx` |
+| 정적 분석 | `jadx` |
 | 동적 검증 | `Android Studio`, `PoC App`, `adb` |
 | 검증 대상 액션 | `com.insecureshop.action.BROADCAST` |
 

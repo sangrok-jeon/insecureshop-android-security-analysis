@@ -15,7 +15,7 @@
 | 취약점명 | `Insecure Implementation of SetResult in Exported Activity` |
 | 취약점 유형 | 부적절한 `setResult()` 구현을 통한 URI permission 중계 |
 | 영향 | 외부 앱이 `content://` URI를 result Intent로 돌려받아 민감 리소스에 접근할 수 있음 |
-| 분석 도구 | `APK Easy Tool`, `jadx`, `Android Studio`, `adb` |
+| 분석 도구 | `jadx`, `Android Studio`, `adb` |
 | 핵심 컴포넌트 | `ResultActivity`, `FileProvider` |
 | 검증 URI | `content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml` |
 
@@ -26,7 +26,7 @@
 | 대상 앱 | `InsecureShop` |
 | 실행 환경 | `Nox` |
 | 운영체제 | `Android` |
-| 정적 분석 | `APK Easy Tool`, `jadx` |
+| 정적 분석 | `jadx` |
 | 동적 검증 | `Android Studio`, `PoC App`, `adb` |
 | 검증 대상 컴포넌트 | `com.insecureshop.ResultActivity` |
 
