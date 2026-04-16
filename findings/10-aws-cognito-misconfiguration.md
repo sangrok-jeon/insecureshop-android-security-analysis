@@ -1,20 +1,10 @@
-﻿# InsecureShop - AWS Cognito Misconfiguration
+# InsecureShop - AWS Cognito Misconfiguration
 
 ## 1. 개요
 
 `InsecureShop`를 분석하던 중 앱 리소스 내부에 AWS Cognito Identity Pool ID가 하드코딩되어 있는 것을 확인하였다. 이후 해당 Identity Pool ID를 이용해 AWS Cognito Identity API를 호출한 결과, 비인증 사용자에 대한 `IdentityId`와 임시 AWS 자격증명을 발급받을 수 있었다.
 
 발급된 임시 자격증명으로 S3 접근 권한을 확인한 결과, 버킷 목록 조회와 특정 버킷 내부 객체 목록 조회가 가능했고, `geolocation-pocfiles` 버킷의 `geo.html` 객체를 다운로드하여 로컬에서 내용을 확인할 수 있었다.
-
-코드 흐름을 순서대로 보면 다음과 같다.
-
-1. 디컴파일된 앱 리소스에서 `aws_Identity_pool_ID` 확인
-2. `nuclei`의 `aws-cognito` file template로 Cognito Pool ID 패턴 탐지
-3. AWS CLI로 `get-id`를 호출해 `IdentityId` 발급
-4. `get-credentials-for-identity`를 호출해 임시 AWS 자격증명 발급
-5. 임시 자격증명으로 `sts get-caller-identity` 및 `s3 ls` 수행
-6. 접근 가능한 S3 버킷과 객체 목록 확인
-7. `s3api get-object`로 S3 객체 다운로드 및 내용 확인
 
 즉 앱에 포함된 Cognito Identity Pool 설정이 비인증 임시 자격증명 발급과 과도한 S3 접근 권한으로 이어지는 구조였다.
 
@@ -43,7 +33,7 @@
 
 ## 4. 분석 방법
 
-이번 항목은 “앱에 포함된 Cognito Identity Pool ID가 실제 AWS 리소스 접근으로 이어지는지”를 기준으로 다음 순서로 분석하였다.
+이번 항목은 앱에 포함된 Cognito Identity Pool ID가 실제 AWS 리소스 접근으로 이어지는지를 기준으로 다음 순서로 분석하였다.
 
 1. `APK Easy Tool`로 APK를 디컴파일해 리소스 파일을 확인하였다.
 2. `nuclei`의 `aws-cognito.yaml` file template로 디컴파일 결과물에서 Cognito Pool ID 패턴을 탐지하였다.
@@ -55,29 +45,11 @@
 
 ## 5. 상세 분석
 
-본 항목은 정적 분석으로 노출된 Cognito Identity Pool ID를 확인한 뒤, AWS CLI로 실제 임시 자격증명 발급과 S3 접근 가능 여부까지 검증하는 흐름이다. 따라서 상세 분석 단계에서 취약점 테스트 증적을 함께 포함하였다.
+### 5.1 Cognito Identity Pool ID 탐지 기준
 
-### 5.1 `nuclei` Cognito 탐지 템플릿 확인
+`nuclei-templates` 안에서 AWS Cognito Pool ID를 탐지하는 file template를 확인하였다. 해당 템플릿은 `file/keys/amazon/aws-cognito.yaml` 위치에 있으며, Cognito Identity Pool ID 형식의 문자열을 정규식으로 탐지한다.
 
-`nuclei-templates` 안에서 AWS Cognito Pool ID를 탐지하는 file template를 확인하였다.
-
-![aws-cognito.yaml 템플릿 위치 확인](../images/10-AWS%20Cognito%20Misconfiguration/05-aws-cognito-template-path.png)
-
-해당 템플릿은 `file/keys/amazon/aws-cognito.yaml` 위치에 있으며, Cognito Identity Pool ID 형식의 문자열을 정규식으로 탐지한다.
-
-### 5.2 APK 디컴파일 결과물 준비
-
-`APK Easy Tool`을 사용해 `InsecureShop.apk`를 디컴파일하였다.
-
-![APK Easy Tool 디컴파일 성공](../images/10-AWS%20Cognito%20Misconfiguration/03-apk-easy-tool-decompile-success.png)
-
-디컴파일 결과 폴더에는 `AndroidManifest.xml`, `res`, `smali` 등 정적 분석에 필요한 파일들이 생성되었다.
-
-![디컴파일 결과 폴더 확인](../images/10-AWS%20Cognito%20Misconfiguration/04-apk-easy-tool-decompiled-folder.png)
-
-### 5.3 `nuclei`로 Cognito Identity Pool ID 탐지
-
-디컴파일된 폴더를 대상으로 `aws-cognito.yaml` file template를 실행하였다.
+이후 `APK Easy Tool`을 사용해 `InsecureShop.apk`를 디컴파일하고, 디컴파일된 결과 폴더를 대상으로 `aws-cognito.yaml` file template를 실행하였다.
 
 ```powershell
 .\nuclei.exe -file -t "C:\Users\user\nuclei-templates\file\keys\amazon\aws-cognito.yaml" -target "C:\Users\user\Documents\APK Easy Tool\1-Decompiled APKs\InsecureShop"
@@ -85,15 +57,7 @@
 
 실행 결과 `res\values\strings.xml`에서 Cognito Identity Pool ID 형식의 문자열이 탐지되었다.
 
-![nuclei로 Cognito Identity Pool ID 탐지](../images/10-AWS%20Cognito%20Misconfiguration/06-nuclei-cognito-pool-detection.png)
-
-탐지된 값은 다음과 같았다.
-
-```text
-us-east-1:7e9426f7-42af-4717-8689-00a9a4b65c1c
-```
-
-### 5.4 `strings.xml`에서 `aws_Identity_pool_ID` 확인
+### 5.2 `strings.xml`의 하드코딩 값 확인
 
 탐지 결과를 바탕으로 리소스 파일을 직접 확인한 결과, `strings.xml`에 아래 문자열이 존재하였다.
 
@@ -101,33 +65,19 @@ us-east-1:7e9426f7-42af-4717-8689-00a9a4b65c1c
 <string name="aws_Identity_pool_ID">us-east-1:7e9426f7-42af-4717-8689-00a9a4b65c1c</string>
 ```
 
-![strings.xml의 aws_Identity_pool_ID 확인](../images/10-AWS%20Cognito%20Misconfiguration/07-strings-xml-identity-pool-id.png)
+또한 `R.string` 리소스에도 `aws_Identity_pool_ID`가 등록되어 있었다. 이 단계에서 앱 리소스 내부에 Cognito Identity Pool ID가 하드코딩되어 있다는 점을 확인하였다.
 
-또한 `R.string` 리소스에도 `aws_Identity_pool_ID`가 등록되어 있었다.
+### 5.3 `IdentityId` 발급 가능 여부 확인
 
-![R.string에 aws_Identity_pool_ID 등록 확인](../images/10-AWS%20Cognito%20Misconfiguration/08-r-string-identity-pool-resource.png)
-
-이 단계에서 앱 리소스 내부에 Cognito Identity Pool ID가 하드코딩되어 있다는 점을 확인하였다.
-
-### 5.5 AWS CLI로 `IdentityId` 발급 확인
-
-AWS CLI 설치 후 버전을 확인하였다.
-
-![AWS CLI 버전 확인](../images/10-AWS%20Cognito%20Misconfiguration/09-aws-cli-version.png)
-
-이후 앱에서 확인한 Identity Pool ID를 사용해 `get-id`를 호출하였다.
+앱에서 확인한 Identity Pool ID를 사용해 AWS CLI로 `get-id`를 호출하였다.
 
 ```powershell
 aws cognito-identity get-id --identity-pool-id "us-east-1:7e9426f7-42af-4717-8689-00a9a4b65c1c" --region us-east-1
 ```
 
-호출 결과 `IdentityId`가 발급되었다.
+호출 결과 `IdentityId`가 발급되었다. 이 결과는 하드코딩된 Identity Pool ID를 통해 비인증 Identity 발급이 가능함을 보여준다.
 
-![get-id로 IdentityId 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/10-cognito-get-id-identityid.png)
-
-이 결과는 하드코딩된 Identity Pool ID를 통해 비인증 Identity 발급이 가능함을 보여준다.
-
-### 5.6 임시 AWS 자격증명 발급 및 역할 확인
+### 5.4 임시 AWS 자격증명 발급 및 역할 확인
 
 발급된 `IdentityId`를 사용해 `get-credentials-for-identity`를 호출하면 `AccessKeyId`, `SecretKey`, `SessionToken`, `Expiration`이 포함된 임시 AWS 자격증명을 받을 수 있었다.
 
@@ -137,12 +87,6 @@ aws cognito-identity get-credentials-for-identity --identity-id "us-east-1:15f01
 
 임시 자격증명 원본 출력에는 실제 키와 세션 토큰이 포함되므로 본문 증적에는 직접 포함하지 않았다. 대신 발급된 임시 자격증명을 PowerShell 환경변수로 설정한 뒤 `sts get-caller-identity`를 실행하여 해당 자격증명이 어떤 역할로 동작하는지 확인하였다.
 
-![get-credentials-for-identity로 임시 자격증명 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/11-get-credentials-redacted.png)
-
-![PowerShell 환경변수로 임시 자격증명 설정](../images/10-AWS%20Cognito%20Misconfiguration/12-powershell-env-vars-redacted.png)
-
-![sts get-caller-identity로 Cognito unauth role 확인](../images/10-AWS%20Cognito%20Misconfiguration/13-sts-caller-identity-unauth-role.png)
-
 응답에서 다음 role 경로가 확인되었다.
 
 ```text
@@ -151,13 +95,9 @@ arn:aws:sts::094222047775:assumed-role/Cognito_InsecureshopUnauth_Role/CognitoId
 
 즉 발급된 임시 자격증명은 `Cognito_InsecureshopUnauth_Role`로 동작하고 있었다.
 
-### 5.7 S3 버킷 목록 조회
+### 5.5 S3 접근 권한 확인
 
 임시 자격증명을 사용한 상태에서 `aws s3 ls`를 실행하자 S3 버킷 목록이 조회되었다.
-
-![aws s3 ls로 버킷 목록 조회](../images/10-AWS%20Cognito%20Misconfiguration/14-s3-bucket-list.png)
-
-확인된 버킷은 다음과 같았다.
 
 ```text
 elasticbeanstalk-us-west-2-094222047733
@@ -167,23 +107,9 @@ geolocation-pocfiles
 
 이 결과는 unauth role에 최소한 S3 버킷 목록 조회 권한이 존재함을 보여준다.
 
-### 5.8 버킷 내부 객체 목록 확인
+이후 각 버킷에 대해 `--recursive --human-readable --summarize` 옵션을 사용해 내부 객체 목록을 확인하였다. 첫 번째 버킷은 비어 있었지만, 다른 버킷에서는 내부 객체 목록을 확인할 수 있었다.
 
-첫 번째 버킷은 비어 있었지만, 다른 버킷에서는 내부 객체 목록을 확인할 수 있었다.
-
-![빈 버킷 조회 결과](../images/10-AWS%20Cognito%20Misconfiguration/15-empty-elasticbeanstalk-bucket.png)
-
-`elasticbeanstalk-us-west-2-094222047775` 버킷에서는 여러 텍스트 객체가 조회되었다.
-
-![elasticbeanstalk 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/16-elasticbeanstalk-bucket-objects.png)
-
-`geolocation-pocfiles` 버킷에서도 `geo.html` 등 여러 객체가 조회되었다.
-
-![geolocation-pocfiles 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/17-geolocation-pocfiles-objects.png)
-
-이 단계에서 단순 버킷 이름뿐 아니라 버킷 내부 객체 목록까지 열람 가능함을 확인하였다.
-
-### 5.9 S3 객체 다운로드 및 내용 확인
+### 5.6 S3 객체 다운로드 및 내용 확인
 
 마지막으로 `geolocation-pocfiles` 버킷의 `geo.html` 객체를 다운로드하였다.
 
@@ -191,13 +117,7 @@ geolocation-pocfiles
 aws s3api get-object --bucket geolocation-pocfiles --key geo.html geo.html
 ```
 
-![s3api get-object로 geo.html 다운로드](../images/10-AWS%20Cognito%20Misconfiguration/18-s3-get-object-geo-html.png)
-
-다운로드 후 `Get-Content`로 파일 내용을 확인하였다.
-
-![geo.html 내용 확인](../images/10-AWS%20Cognito%20Misconfiguration/19-geo-html-content.png)
-
-이를 통해 발급받은 Cognito 임시 자격증명이 단순 목록 조회뿐 아니라 실제 S3 객체 읽기 권한까지 가지고 있음을 검증하였다.
+다운로드 후 `Get-Content`로 파일 내용을 확인하였다. 이를 통해 발급받은 Cognito 임시 자격증명이 단순 목록 조회뿐 아니라 실제 S3 객체 읽기 권한까지 가지고 있음을 검증하였다.
 
 ## 6. 영향
 
@@ -231,6 +151,72 @@ aws s3api get-object --bucket geolocation-pocfiles --key geo.html geo.html
 
 ## 9. 취약점 테스트
 
-본 항목의 취약점 테스트는 5번 상세 분석에서 정적 탐지, 리소스 확인, `IdentityId` 발급, 임시 AWS 자격증명 발급, S3 버킷 및 객체 접근 검증까지 동일한 흐름으로 증적과 함께 다루었다.
+### 1. aws-cognito.yaml 템플릿 위치 확인
 
-따라서 동일한 이미지와 설명의 반복을 피하기 위해 별도의 취약점 테스트 세부 절은 분리하지 않았다.
+![aws-cognito.yaml 템플릿 위치 확인](../images/10-AWS%20Cognito%20Misconfiguration/05-aws-cognito-template-path.png)
+
+`nuclei-templates`에서 Cognito Identity Pool ID를 탐지하는 `aws-cognito.yaml` file template 위치를 확인하였다.
+
+### 2. APK 디컴파일 결과물 준비
+
+![APK Easy Tool 디컴파일 성공](../images/10-AWS%20Cognito%20Misconfiguration/03-apk-easy-tool-decompile-success.png)
+
+![디컴파일 결과 폴더 확인](../images/10-AWS%20Cognito%20Misconfiguration/04-apk-easy-tool-decompiled-folder.png)
+
+`APK Easy Tool`로 APK를 디컴파일하고, `AndroidManifest.xml`, `res`, `smali` 등 정적 분석에 필요한 결과물이 생성된 것을 확인하였다.
+
+### 3. nuclei로 Cognito Identity Pool ID 탐지
+
+![nuclei로 Cognito Identity Pool ID 탐지](../images/10-AWS%20Cognito%20Misconfiguration/06-nuclei-cognito-pool-detection.png)
+
+디컴파일된 폴더를 대상으로 `aws-cognito.yaml` file template를 실행한 결과, `res\values\strings.xml`에서 Cognito Identity Pool ID 형식의 문자열이 탐지되었다.
+
+### 4. strings.xml 및 R.string에서 Identity Pool ID 확인
+
+![strings.xml의 aws_Identity_pool_ID 확인](../images/10-AWS%20Cognito%20Misconfiguration/07-strings-xml-identity-pool-id.png)
+
+![R.string에 aws_Identity_pool_ID 등록 확인](../images/10-AWS%20Cognito%20Misconfiguration/08-r-string-identity-pool-resource.png)
+
+`strings.xml`과 `R.string` 리소스에 `aws_Identity_pool_ID` 값이 존재함을 확인하였다.
+
+### 5. AWS CLI 및 IdentityId 발급 확인
+
+![AWS CLI 버전 확인](../images/10-AWS%20Cognito%20Misconfiguration/09-aws-cli-version.png)
+
+![get-id로 IdentityId 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/10-cognito-get-id-identityid.png)
+
+AWS CLI를 사용해 `get-id`를 호출한 결과, 하드코딩된 Identity Pool ID로 `IdentityId`를 발급받을 수 있었다.
+
+### 6. 임시 자격증명 발급 및 역할 확인
+
+![get-credentials-for-identity로 임시 자격증명 발급 확인](../images/10-AWS%20Cognito%20Misconfiguration/11-get-credentials-redacted.png)
+
+![PowerShell 환경변수로 임시 자격증명 설정](../images/10-AWS%20Cognito%20Misconfiguration/12-powershell-env-vars-redacted.png)
+
+![sts get-caller-identity로 Cognito unauth role 확인](../images/10-AWS%20Cognito%20Misconfiguration/13-sts-caller-identity-unauth-role.png)
+
+`get-credentials-for-identity`로 임시 AWS 자격증명을 발급받았고, 이를 PowerShell 환경변수에 설정한 뒤 `sts get-caller-identity`로 `Cognito_InsecureshopUnauth_Role`을 확인하였다.
+
+### 7. S3 버킷 목록 조회
+
+![aws s3 ls로 버킷 목록 조회](../images/10-AWS%20Cognito%20Misconfiguration/14-s3-bucket-list.png)
+
+발급된 임시 자격증명을 사용해 `aws s3 ls`를 실행하자 S3 버킷 목록이 조회되었다.
+
+### 8. 버킷 내부 객체 목록 확인
+
+![빈 버킷 조회 결과](../images/10-AWS%20Cognito%20Misconfiguration/15-empty-elasticbeanstalk-bucket.png)
+
+![elasticbeanstalk 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/16-elasticbeanstalk-bucket-objects.png)
+
+![geolocation-pocfiles 버킷 객체 목록 확인](../images/10-AWS%20Cognito%20Misconfiguration/17-geolocation-pocfiles-objects.png)
+
+각 버킷의 내부 객체 목록을 확인하였다. 일부 버킷은 비어 있었지만, `elasticbeanstalk`와 `geolocation-pocfiles` 버킷에서는 내부 객체가 조회되었다.
+
+### 9. S3 객체 다운로드 및 내용 확인
+
+![s3api get-object로 geo.html 다운로드](../images/10-AWS%20Cognito%20Misconfiguration/18-s3-get-object-geo-html.png)
+
+![geo.html 내용 확인](../images/10-AWS%20Cognito%20Misconfiguration/19-geo-html-content.png)
+
+`geolocation-pocfiles` 버킷의 `geo.html` 객체를 다운로드한 뒤 파일 내용을 확인하였다. 이를 통해 unauth role의 임시 자격증명으로 실제 S3 객체 읽기가 가능함을 검증하였다.

@@ -6,10 +6,6 @@
 
 또한 `com.insecureshop.ResultActivity`는 `android:exported="true"`로 노출되어 있으며, `onCreate`에서 `setResult(-1, getIntent())`를 호출해 외부에서 전달된 `Intent`를 그대로 반환한다. 이 구조는 `FileProvider`의 `grantUriPermissions="true"` 설정과 결합될 경우 외부 앱이 `content://com.insecureshop.file_provider/...` URI에 대한 읽기 권한을 획득하는 중계점으로 악용될 수 있다.
 
-실제 검증에서는 별도 `PoC App`을 제작해 `content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml` URI를 `ResultActivity`로 전달하고, 반환된 URI를 `openInputStream()`으로 읽어 `Prefs.xml` 내부의 `username`, `password` 값을 확인하였다.
-
-즉 이번 항목은 단순히 `FileProvider`가 존재한다는 수준이 아니라, **과도하게 넓은 FileProvider 경로 설정과 exported Activity를 통한 URI 권한 중계가 결합되어 앱 내부 파일 유출로 이어지는 구조**를 검증한 사례다.
-
 ## 2. 취약점 요약
 
 | 항목 | 내용 |
@@ -34,7 +30,7 @@
 
 ## 4. 분석 방법
 
-이번 항목은 “앱 내부 파일을 가리키는 `content://` URI가 실제로 외부 앱으로 전달되고 읽힐 수 있는가”를 기준으로 다음 순서로 분석하였다.
+이번 항목은 앱 내부 파일을 가리키는 `content://` URI가 실제로 외부 앱으로 전달되고 읽힐 수 있는가를 기준으로 다음 순서로 분석하였다.
 
 1. `AndroidManifest.xml`에서 `FileProvider` 선언과 `ResultActivity` 공개 여부를 확인하였다.
 2. `provider_paths.xml`에서 `FileProvider`가 어떤 경로를 공유 대상으로 삼는지 확인하였다.
@@ -45,11 +41,9 @@
 
 ## 5. 상세 분석
 
-### 5.1 FileProvider 선언 확인
+### 5.1 FileProvider 선언
 
 Manifest를 확인한 결과 `InsecureShop`는 `androidx.core.content.FileProvider`를 사용하고 있었고, authority는 `com.insecureshop.file_provider`로 설정되어 있었다. 또한 `grantUriPermissions="true"`가 활성화되어 있어 앱이 특정 URI 권한을 다른 앱에 전달할 수 있는 상태였다.
-
-![FileProvider Manifest 선언 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2011%2052%2028.png)
 
 ```xml
 <provider
@@ -63,18 +57,11 @@ Manifest를 확인한 결과 `InsecureShop`는 `androidx.core.content.FileProvid
 </provider>
 ```
 
-여기서 핵심은 두 가지다.
-
-- `android:authorities="com.insecureshop.file_provider"`: 이후 `content://com.insecureshop.file_provider/...` 형태 URI를 구성할 수 있는 기준이 된다.
-- `android:grantUriPermissions="true"`: 앱이 특정 URI에 대한 접근 권한을 외부 앱에 부여할 수 있음을 의미한다.
-
 `FileProvider` 자체는 `exported=false`이므로 외부 앱이 직접 광범위하게 접근하는 구조는 아니지만, 이후 확인한 `ResultActivity`와 결합되면 URI 권한이 외부 앱으로 전달될 수 있다.
 
-### 5.2 `provider_paths.xml`의 `root-path` 설정 확인
+### 5.2 `provider_paths.xml`의 `root-path` 설정
 
 Manifest에서 참조하는 `provider_paths.xml`을 확인한 결과, 아래와 같이 `root-path`가 `/`로 설정되어 있었다.
-
-![provider_paths.xml의 root-path 설정 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2013%2023%2008.png)
 
 ```xml
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
@@ -82,9 +69,7 @@ Manifest에서 참조하는 `provider_paths.xml`을 확인한 결과, 아래와 
 </paths>
 ```
 
-이 설정은 `FileProvider`가 앱 내부 특정 디렉터리만이 아니라 파일시스템 루트(`/`) 전체를 기준 경로로 사용한다는 뜻이다. 따라서 `/data`, `/sdcard`, `/storage`, `/system` 등 `/` 아래 모든 경로가 공유 범위 안에 포함될 수 있다.
-
-즉 아래와 같은 URI도 구성 가능하다.
+이 설정은 `FileProvider`가 앱 내부 특정 디렉터리만이 아니라 파일시스템 루트(`/`) 전체를 기준 경로로 사용한다는 뜻이다. 따라서 아래와 같은 URI도 구성 가능하다.
 
 ```text
 content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml
@@ -92,15 +77,9 @@ content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_
 
 안전한 구성에서는 일반적으로 `files-path`, `cache-path` 등 특정 앱 디렉터리만 제한적으로 열어두어야 한다. 반면 이 앱은 `/` 전체를 열어두고 있어 경로 범위가 과도하게 넓다.
 
-### 5.3 `FileProvider`가 `root-path`를 실제 파일 경로로 해석하는 방식
+### 5.3 `FileProvider`가 실제 파일 경로로 해석하는 방식
 
-`FileProvider` 구현을 확인한 결과, `attachInfo()`는 `grantUriPermissions`가 켜져 있어야 하며, 이후 `getPathStrategy()`를 통해 `provider_paths.xml`에 정의된 경로 전략을 읽는다.
-
-![attachInfo에서 grantUriPermissions 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2013%2032%2001.png)
-
-또한 `parsePathStrategy()`에서는 `root-path` 태그를 만나면 `DEVICE_ROOT`를 사용하도록 구현되어 있었다.
-
-![parsePathStrategy에서 TAG_ROOT_PATH를 DEVICE_ROOT로 매핑](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2013%2043%2025.png)
+`FileProvider` 구현을 확인한 결과, `parsePathStrategy()`에서 `root-path` 태그를 만나면 `DEVICE_ROOT`를 사용하도록 구현되어 있었다.
 
 ```java
 if (TAG_ROOT_PATH.equals(tag)) {
@@ -121,13 +100,11 @@ if (file2.getPath().startsWith(root.getPath())) {
 }
 ```
 
-이 검사는 “configured root 밖으로 벗어나는가”만 확인한다. 그런데 configured root 자체가 `/`이므로 `/data/data/com.insecureshop/shared_prefs/Prefs.xml`도 그대로 조건을 통과한다. 즉 URI가 앱 내부 민감 파일을 가리키더라도 `FileProvider` 관점에서는 여전히 허용 범위 안의 경로다.
+이 검사는 configured root 밖으로 벗어나는지만 확인한다. 그런데 configured root 자체가 `/`이므로 `/data/data/com.insecureshop/shared_prefs/Prefs.xml`도 조건을 통과한다.
 
 ### 5.4 `openFile()`과 `query()`를 통한 파일 접근 가능성
 
 `FileProvider`는 `getFileForUri()`로 해석한 경로를 기반으로 실제 파일을 연다.
-
-![openFile에서 getFileForUri 결과를 실제 파일로 여는 코드](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2009%2035.png)
 
 ```java
 public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
@@ -137,19 +114,11 @@ public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundEx
 }
 ```
 
-또한 `query()`는 같은 URI를 실제 파일로 해석한 뒤 `_display_name`, `_size`와 같은 메타데이터를 반환한다.
+또한 `query()`는 같은 URI를 실제 파일로 해석한 뒤 `_display_name`, `_size`와 같은 메타데이터를 반환한다. 이 흐름은 `content://com.insecureshop.file_provider/...` URI가 실제 파일 객체로 해석되고 파일 열기까지 이어질 수 있음을 보여준다.
 
-![query에서 파일 메타데이터를 반환하는 코드](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2010%2020.png)
-
-이 흐름은 `content://com.insecureshop.file_provider/...` URI가 단순 문자열이 아니라, 실제 파일 객체로 해석되고 메타데이터 조회 및 파일 열기까지 이어질 수 있음을 보여준다.
-
-즉 이 시점에서 정적 분석만으로도 “과도하게 넓은 경로 설정이 실제 파일 접근 API와 연결되어 있다”는 점을 확인할 수 있다.
-
-### 5.5 `ResultActivity`를 통한 URI 권한 중계 가능성
+### 5.5 `ResultActivity`를 통한 URI 권한 중계
 
 이 취약점이 실제 외부 앱 공격으로 이어지려면, `FileProvider` URI에 대한 읽기 권한이 외부 앱으로 전달되어야 한다. 이를 위해 `ResultActivity`를 확인한 결과, Manifest에서 `android:exported="true"`로 선언되어 있었다.
-
-![ResultActivity exported 설정 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2035%2044.png)
 
 그리고 `ResultActivity`의 구현은 아래와 같았다.
 
@@ -163,56 +132,6 @@ protected void onCreate(Bundle savedInstanceState) {
 ```
 
 이 코드는 외부 앱이 전달한 `Intent`를 아무 검증 없이 그대로 `RESULT_OK`로 반환한다는 뜻이다. 따라서 공격자가 `content://com.insecureshop.file_provider/...` URI와 `FLAG_GRANT_READ_URI_PERMISSION`를 실어 보내면, `ResultActivity`는 그 `Intent`를 그대로 돌려주는 중계점으로 동작할 수 있다.
-
-즉 이번 항목의 핵심은 `FileProvider` 자체가 외부에 노출되었다는 데 있지 않다. **과도한 경로 범위 설정과 exported Activity의 Intent 재전달이 결합될 때 외부 앱이 앱 내부 파일 URI 권한을 획득할 수 있다는 점**이 핵심이다.
-
-### 5.6 `am start`로 공격용 URI 전달 구조 확인
-
-우선 `adb shell am start`를 이용해 `ResultActivity`에 공격용 URI와 `FLAG_GRANT_READ_URI_PERMISSION`를 포함한 Intent를 전달할 수 있는지 확인하였다.
-
-```powershell
-nox_adb shell am start -W -n com.insecureshop/.ResultActivity -d "content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml" --grant-read-uri-permission
-```
-
-![am start로 ResultActivity에 공격용 URI 전달](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2048%2052.png)
-
-실행 결과 `dat=content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml`와 `flg=0x1`가 포함된 Intent가 `ResultActivity`로 전달되는 것을 확인하였다. 이는 공격용 URI와 read grant 플래그가 외부에서 입력 가능한 구조임을 보여주는 1차 동적 증적이다.
-
-다만 `am start`만으로는 반환된 `result Intent`를 수신해 실제 파일 내용을 읽을 수 없으므로, 최종 검증은 별도의 `PoC App`으로 진행하였다.
-
-### 5.7 `PoC App`을 이용한 실제 파일 읽기 검증
-
-최종 검증을 위해 Android Studio에서 별도의 `PoC App`을 제작하였다. 이 앱은 다음 순서로 동작한다.
-
-1. `content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml` URI 생성
-2. 해당 URI와 `FLAG_GRANT_READ_URI_PERMISSION`를 포함한 `Intent`로 `com.insecureshop.ResultActivity` 실행
-3. `onActivityResult()`에서 반환된 URI 수신
-4. `getContentResolver().openInputStream(returnedUri)`로 실제 파일 읽기
-5. 읽은 내용을 `logcat`으로 출력
-
-핵심 동적 검증 결과는 아래와 같다.
-
-![PoC App logcat - 반환된 URI와 파일 읽기 시작 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2057%2059.png)
-
-![PoC App logcat - Prefs.xml 내용과 종료 지점 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2058%2010.png)
-
-로그에서는 다음 흐름이 확인되었다.
-
-- `ResultActivity launch requested`
-- `resultCode = -1`
-- `returnedUri = content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml`
-- `=== FILE CONTENT START ===`
-- `Prefs.xml` 내용 출력
-- `=== FILE CONTENT END ===`
-
-특히 로그에 아래 민감 정보가 실제로 포함되어 있었다.
-
-```xml
-<string name="password">!ns3csh0p</string>
-<string name="username">shopuser</string>
-```
-
-즉 외부에서 실행한 `PoC App`이 `ResultActivity`를 통해 URI 권한을 획득한 뒤, 원래는 접근할 수 없어야 하는 `/data/data/com.insecureshop/shared_prefs/Prefs.xml` 내용을 읽는 데 성공한 것이다.
 
 ## 6. 영향
 
@@ -246,6 +165,50 @@ nox_adb shell am start -W -n com.insecureshop/.ResultActivity -d "content://com.
 
 ## 9. 취약점 테스트
 
-본 항목의 취약점 테스트는 5번 상세 분석에서 정적 근거 확인, `am start` 기반 1차 동적 검증, `PoC App` 기반 실제 파일 읽기 검증까지 동일한 흐름으로 증적과 함께 다루었다.
+### 1. FileProvider Manifest 선언 확인
 
-따라서 동일한 이미지와 설명의 반복을 피하기 위해 별도의 취약점 테스트 세부 절은 분리하지 않았다.
+![FileProvider Manifest 선언 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2011%2052%2028.png)
+
+`FileProvider`는 `com.insecureshop.file_provider` authority를 사용하고 있었고, `grantUriPermissions="true"`가 설정되어 있었다.
+
+### 2. provider_paths.xml의 root-path 설정 확인
+
+![provider_paths.xml의 root-path 설정 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2013%2023%2008.png)
+
+`provider_paths.xml`에서 `<root-path name="root" path="/" />` 설정을 확인하였다. 이 설정은 파일시스템 루트 전체를 공유 기준 경로로 삼는다는 의미다.
+
+### 3. FileProvider 내부 경로 해석 확인
+
+![attachInfo에서 grantUriPermissions 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2013%2032%2001.png)
+
+![parsePathStrategy에서 TAG_ROOT_PATH를 DEVICE_ROOT로 매핑](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2013%2043%2025.png)
+
+`FileProvider`는 `root-path`를 `DEVICE_ROOT`로 매핑하고, URI를 실제 파일 경로로 해석한다.
+
+### 4. openFile 및 query 동작 확인
+
+![openFile에서 getFileForUri 결과를 실제 파일로 여는 코드](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2009%2035.png)
+
+![query에서 파일 메타데이터를 반환하는 코드](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2010%2020.png)
+
+`openFile()`은 `getFileForUri()` 결과를 실제 파일로 열고, `query()`는 파일명과 크기 같은 메타데이터를 반환할 수 있다.
+
+### 5. ResultActivity를 통한 URI 권한 중계 확인
+
+![ResultActivity exported 설정 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2035%2044.png)
+
+`ResultActivity`는 `exported=true`이며, 입력 Intent를 그대로 `setResult(-1, getIntent())`로 반환하는 구조였다.
+
+### 6. am start로 공격용 URI 전달 확인
+
+![am start로 ResultActivity에 공격용 URI 전달](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2048%2052.png)
+
+`adb shell am start`로 `ResultActivity`에 `content://com.insecureshop.file_provider/.../Prefs.xml` URI와 read grant flag를 전달할 수 있음을 확인하였다.
+
+### 7. PoC App으로 실제 파일 읽기 확인
+
+![PoC App logcat - 반환된 URI와 파일 읽기 시작 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2057%2059.png)
+
+![PoC App logcat - Prefs.xml 내용과 종료 지점 확인](../images/11-Insecure%20use%20of%20FilePaths%20in%20FileProvider/2026-04-15%2014%2058%2010.png)
+
+PoC 앱은 반환된 URI를 `openInputStream()`으로 읽었고, `Prefs.xml` 내부의 `username`, `password` 값을 확인하였다.

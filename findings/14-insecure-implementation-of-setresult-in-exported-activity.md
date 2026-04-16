@@ -8,10 +8,6 @@
 
 이 구조는 `content://` URI와 `FLAG_GRANT_READ_URI_PERMISSION` 같은 URI permission flag가 포함된 경우 문제가 된다. 공격 앱이 `ResultActivity`에 특정 `content://` URI를 포함한 `Intent`를 전달하면, `ResultActivity`는 이를 검증하지 않고 그대로 result Intent로 반환한다. 그 결과 호출자는 반환된 URI를 사용해 `ContentResolver`로 접근을 시도할 수 있다.
 
-실제 검증에서는 별도 `PoC App`을 제작해 `content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml` URI와 읽기 권한 플래그를 포함한 Intent로 `ResultActivity`를 실행하였다. 이후 `ResultActivity`가 동일한 URI를 result로 반환했고, PoC 앱은 반환된 URI를 통해 `Prefs.xml` 내용을 읽는 데 성공하였다.
-
-즉 이번 항목은 **exported Activity가 외부 입력 Intent를 그대로 `setResult()`로 반환함으로써 URI 접근 권한을 중계할 수 있는 취약점**을 검증한 사례다.
-
 ## 2. 취약점 요약
 
 | 항목 | 내용 |
@@ -47,11 +43,9 @@
 
 ## 5. 상세 분석
 
-### 5.1 `ResultActivity` 외부 실행 가능 여부 확인
+### 5.1 `ResultActivity` 외부 실행 가능 여부
 
 Manifest를 확인한 결과 `ResultActivity`는 `android:exported="true"`로 선언되어 있었다.
-
-![ResultActivity exported 설정 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/01-resultactivity-exported.png)
 
 ```xml
 <activity
@@ -61,11 +55,9 @@ Manifest를 확인한 결과 `ResultActivity`는 `android:exported="true"`로 �
 
 즉 외부 앱이 `ResultActivity`를 직접 실행할 수 있는 상태였다. 이 점은 공격 앱이 임의의 `Intent`를 전달할 수 있는 전제가 된다.
 
-### 5.2 `setResult(-1, getIntent())` 구현 확인
+### 5.2 `setResult(-1, getIntent())` 구현
 
 `ResultActivity.onCreate()`를 확인한 결과, Activity가 시작되자마자 `getIntent()`로 받은 입력 Intent를 그대로 `setResult()`의 결과 Intent로 사용하고 있었다.
-
-![ResultActivity setResult 구현 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/02-resultactivity-setresult.png)
 
 ```java
 @Override
@@ -98,15 +90,15 @@ protected void onCreate(Bundle savedInstanceState) {
 
 따라서 이번 PoC에서 동일한 `Prefs.xml` URI를 사용하더라도, 검증 목적은 `FileProvider` 경로 설정이 아니라 **`ResultActivity`가 URI를 result Intent로 중계하는지**를 확인하는 것이다.
 
-### 5.4 `PoC App`을 통한 result Intent 수신 검증
+### 5.4 공격 흐름
 
-최종 검증을 위해 별도 `PoC App`을 제작하였다. PoC 앱은 다음 URI를 대상으로 사용하였다.
+PoC 앱은 다음 URI를 대상으로 사용하였다.
 
 ```text
 content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml
 ```
 
-PoC 앱은 이 URI를 `Intent.setData()`와 `ClipData`에 설정하고, `FLAG_GRANT_READ_URI_PERMISSION`을 추가한 뒤 `com.insecureshop.ResultActivity`를 `startActivityForResult()`로 실행하였다.
+PoC 앱은 이 URI를 `Intent.setData()`와 `ClipData`에 설정하고, `FLAG_GRANT_READ_URI_PERMISSION`을 추가한 뒤 `com.insecureshop.ResultActivity`를 `startActivityForResult()`로 실행한다.
 
 동작 흐름은 다음과 같다.
 
@@ -116,44 +108,6 @@ PoC 앱은 이 URI를 `Intent.setData()`와 `ClipData`에 설정하고, `FLAG_GR
 4. `ResultActivity`가 `setResult(-1, getIntent())`로 동일 Intent 반환
 5. PoC 앱이 `onActivityResult()`에서 반환 URI 수신
 6. `ContentResolver.openInputStream()`으로 파일 내용 읽기
-
-PoC 앱 화면에서도 반환된 URI와 파일 내용이 확인되었다.
-
-![PoC App 화면 - 반환 URI 및 Prefs.xml 내용 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/03-poc-ui-result.png)
-
-화면에는 다음 정보가 표시되었다.
-
-- 반환 URI: `content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml`
-- 파일 내용: `Prefs.xml` XML 데이터
-- 저장된 `password`, `productList` 등 앱 내부 데이터
-
-이를 통해 `ResultActivity`가 입력 Intent를 그대로 반환하는 구조가 실제 민감 파일 접근으로 이어질 수 있음을 확인하였다.
-
-### 5.5 `adb logcat` 기반 검증 결과
-
-동일 결과는 cmd에서 `adb logcat`으로도 확인하였다.
-
-![PoC App logcat - 반환 URI 및 파일 내용 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/04-logcat-result-poc.png)
-
-로그에서는 다음 흐름이 확인되었다.
-
-```text
-D RESULT_POC: targetUri = content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml
-D RESULT_POC: launching ResultActivity
-D RESULT_POC: onActivityResult requestCode=1400, resultCode=-1
-D RESULT_POC: returnedUri = content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml
-D RESULT_POC: === FILE CONTENT START ===
-```
-
-이 로그는 PoC 앱이 전달한 URI가 `ResultActivity`를 거쳐 동일하게 반환되었고, 이후 파일 내용 읽기로 이어졌음을 보여준다.
-
-특히 출력된 파일 내용에는 다음과 같은 민감 정보가 포함되어 있었다.
-
-```xml
-<string name="password">!ns3csh0p</string>
-```
-
-즉 외부 앱이 `ResultActivity`의 부적절한 `setResult()` 구현을 이용해 result Intent로 URI를 되돌려받고, 해당 URI를 통해 내부 파일 내용을 읽는 데 성공하였다.
 
 ## 6. 영향
 
@@ -198,6 +152,36 @@ finish();
 
 ## 9. 취약점 테스트
 
-본 항목의 취약점 테스트는 5번 상세 분석에서 정적 근거 확인, `PoC App` 기반 result Intent 수신 검증, 화면 및 `adb logcat` 기반 파일 내용 확인까지 동일한 흐름으로 증적과 함께 다루었다.
+### 1. ResultActivity exported 설정 확인
 
-따라서 동일한 이미지와 설명의 반복을 피하기 위해 별도의 취약점 테스트 세부 절은 분리하지 않았다.
+![ResultActivity exported 설정 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/01-resultactivity-exported.png)
+
+`ResultActivity`는 `android:exported="true"`로 선언되어 있어 외부 앱이 직접 실행할 수 있었다.
+
+### 2. setResult 구현 확인
+
+![ResultActivity setResult 구현 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/02-resultactivity-setresult.png)
+
+`ResultActivity`는 `setResult(-1, getIntent())`를 호출해 입력 Intent를 그대로 결과 Intent로 반환한다.
+
+### 3. PoC 앱 화면에서 반환 URI 및 파일 내용 확인
+
+![PoC App 화면 - 반환 URI 및 Prefs.xml 내용 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/03-poc-ui-result.png)
+
+PoC 앱은 `ResultActivity`로부터 반환된 URI를 받아 `Prefs.xml` 내용을 화면에 출력하였다. 반환 URI와 파일 내용이 함께 표시되므로, result Intent를 통한 URI 중계가 실제 파일 접근으로 이어졌음을 확인할 수 있다.
+
+### 4. adb logcat 기반 검증 결과
+
+![PoC App logcat - 반환 URI 및 파일 내용 확인](../images/14-Insecure%20Implementation%20of%20SetResult%20in%20exported%20Activity/04-logcat-result-poc.png)
+
+cmd에서 `adb logcat`으로도 다음 흐름을 확인하였다.
+
+```text
+D RESULT_POC: targetUri = content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml
+D RESULT_POC: launching ResultActivity
+D RESULT_POC: onActivityResult requestCode=1400, resultCode=-1
+D RESULT_POC: returnedUri = content://com.insecureshop.file_provider/root/data/data/com.insecureshop/shared_prefs/Prefs.xml
+D RESULT_POC: === FILE CONTENT START ===
+```
+
+로그에는 `password` 값 등 `Prefs.xml` 내용이 포함되어 있었고, 이를 통해 외부 앱이 `ResultActivity`를 통해 URI를 되돌려받아 민감 파일을 읽는 데 성공했음을 검증하였다.

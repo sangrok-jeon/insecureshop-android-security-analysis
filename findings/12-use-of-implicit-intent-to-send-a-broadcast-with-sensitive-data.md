@@ -6,10 +6,6 @@
 
 또한 `AboutUsActivity`는 `android:exported="true"`로 선언되어 있어 외부 앱이 직접 실행할 수 있었다. 사용자가 해당 화면에서 `About InsecureShop` 버튼을 누르면 `onSendData()`가 실행되고, 이 메서드는 `Prefs`에 저장된 `username`, `password`를 `com.insecureshop.action.BROADCAST` 브로드캐스트의 extra로 담아 `sendBroadcast()`로 전송한다.
 
-실제 검증에서는 별도 `PoC App`을 제작해 동일한 action에 대한 `BroadcastReceiver`를 등록한 뒤 `AboutUsActivity`를 실행하고 버튼을 눌렀다. 그 결과 외부 앱이 `shopuser / !ns3csh0p` 자격증명을 그대로 수신하는 것을 확인하였다.
-
-즉 이번 항목은 **민감 정보를 implicit broadcast로 전송하는 구조로 인해, 동일 action을 등록한 제3자 앱이 자격증명을 탈취할 수 있는 취약점**을 검증한 사례다.
-
 ## 2. 취약점 요약
 
 | 항목 | 내용 |
@@ -44,11 +40,9 @@
 
 ## 5. 상세 분석
 
-### 5.1 `AboutUsActivity` 외부 실행 가능 여부 확인
+### 5.1 `AboutUsActivity` 외부 실행 가능 여부
 
 Manifest를 확인한 결과 `AboutUsActivity`는 `android:exported="true"`로 선언되어 있었다.
-
-![AboutUsActivity exported 설정 확인](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/01-aboutus-exported.png)
 
 ```xml
 <activity
@@ -61,8 +55,6 @@ Manifest를 확인한 결과 `AboutUsActivity`는 `android:exported="true"`로 �
 ### 5.2 `onSendData()`에서 자격증명을 implicit broadcast로 전송
 
 `AboutUsActivity.onSendData()`를 확인한 결과, `Prefs`에서 저장된 `username`과 `password`를 읽은 뒤 `com.insecureshop.action.BROADCAST` action을 갖는 브로드캐스트에 extra로 담아 전송하고 있었다.
-
-![onSendData에서 username/password 브로드캐스트 전송 확인](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/02-onsenddata-broadcast-creds.png)
 
 ```java
 public final void onSendData(View view) {
@@ -84,11 +76,9 @@ public final void onSendData(View view) {
 
 즉 이 브로드캐스트는 특정 패키지나 컴포넌트를 지정하지 않는 `implicit broadcast`이며, 동일한 action을 등록한 외부 앱도 수신 가능하다.
 
-### 5.3 버튼 클릭이 `onSendData()`로 연결되는 구조 확인
+### 5.3 버튼 클릭이 `onSendData()`로 연결되는 구조
 
 `activity_about_us.xml`을 확인한 결과 `About InsecureShop` 버튼은 `android:onClick="onSendData"`로 연결되어 있었다.
-
-![activity_about_us.xml의 onClick 연결 확인](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/03-aboutus-button-onclick.png)
 
 ```xml
 <Button
@@ -98,52 +88,6 @@ public final void onSendData(View view) {
 ```
 
 이 구조는 사용자가 해당 버튼을 누를 때 `AboutUsActivity.onSendData()`가 실행된다는 뜻이다. 따라서 실제 브로드캐스트 전송은 사용자의 UI 동작과 직접 연결되어 있다.
-
-### 5.4 `PoC App` 실행 전 준비 화면
-
-최종 검증을 위해 별도 `PoC App`을 제작하였다. 이 앱은 `com.insecureshop.action.BROADCAST` action에 대한 `BroadcastReceiver`를 등록한 뒤, `AboutUsActivity`를 여는 버튼을 제공한다.
-
-![PoC App 초기 화면](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/04-poc-initial-screen.png)
-
-이 화면에서 `OPEN ABOUTUSACTIVITY` 버튼을 누르면 InsecureShop의 `AboutUsActivity`가 실행된다.
-
-### 5.5 `AboutUsActivity` 버튼 클릭으로 브로드캐스트 발생
-
-PoC 앱에서 `AboutUsActivity`를 실행한 뒤, InsecureShop 화면에서 `About InsecureShop` 버튼을 눌러 브로드캐스트를 발생시켰다.
-
-![InsecureShop AboutUsActivity 화면](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/05-aboutus-runtime-screen.png)
-
-이 버튼 클릭 시 앞서 확인한 `onSendData()`가 실행되며, 저장된 `username`, `password`를 암시적 브로드캐스트로 전송한다.
-
-### 5.6 `PoC App`에서 자격증명 수신 확인
-
-버튼 클릭 이후 PoC 앱 화면에서는 브로드캐스트 수신 결과가 아래와 같이 표시되었다.
-
-![PoC App 화면 - 수신된 자격증명 표시](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/06-poc-ui-received-creds.png)
-
-화면에는 다음 값이 표시되었다.
-
-```text
-username = shopuser
-password = !ns3csh0p
-```
-
-즉 외부 앱이 동일 action을 등록하는 것만으로 InsecureShop가 전송한 자격증명을 수신할 수 있음을 확인하였다.
-
-### 5.7 `logcat` 기반 수신 결과 검증
-
-동일 결과는 `logcat`에서도 확인되었다.
-
-![PoC App logcat - 브로드캐스트 수신 성공](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/07-logcat-received-creds.png)
-
-로그에서는 다음 흐름이 확인되었다.
-
-- `receiver registered for com.insecureshop.action.BROADCAST`
-- `AboutUsActivity launched`
-- `received username = shopuser`
-- `received password = !ns3csh0p`
-
-또한 동일 로그가 여러 번 반복된 것은 사용자가 `About InsecureShop` 버튼을 여러 차례 눌렀기 때문이며, 버튼 클릭 시마다 동일 브로드캐스트가 반복 전송되는 구조임을 의미한다.
 
 ## 6. 영향
 
@@ -177,6 +121,44 @@ password = !ns3csh0p
 
 ## 9. 취약점 테스트
 
-본 항목의 취약점 테스트는 5번 상세 분석에서 정적 근거 확인, `PoC App` 기반 브로드캐스트 수신 검증, `logcat` 기반 자격증명 확인까지 동일한 흐름으로 증적과 함께 다루었다.
+### 1. AboutUsActivity exported 설정 확인
 
-따라서 동일한 이미지와 설명의 반복을 피하기 위해 별도의 취약점 테스트 세부 절은 분리하지 않았다.
+![AboutUsActivity exported 설정 확인](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/01-aboutus-exported.png)
+
+`AboutUsActivity`는 `android:exported="true"`로 선언되어 있어 외부 앱에서 직접 실행할 수 있었다.
+
+### 2. username/password 브로드캐스트 전송 코드 확인
+
+![onSendData에서 username/password 브로드캐스트 전송 확인](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/02-onsenddata-broadcast-creds.png)
+
+`onSendData()`는 `Prefs`에 저장된 `username`, `password`를 읽어 `com.insecureshop.action.BROADCAST` 암시적 브로드캐스트로 전송한다.
+
+### 3. 버튼과 onSendData 연결 확인
+
+![activity_about_us.xml의 onClick 연결 확인](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/03-aboutus-button-onclick.png)
+
+`activity_about_us.xml`의 버튼은 `android:onClick="onSendData"`로 연결되어 있어, 사용자가 버튼을 누르면 브로드캐스트 전송 코드가 실행된다.
+
+### 4. PoC App 초기 화면
+
+![PoC App 초기 화면](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/04-poc-initial-screen.png)
+
+PoC 앱은 동일 action에 대한 `BroadcastReceiver`를 등록하고, `AboutUsActivity`를 실행하는 버튼을 제공하도록 구성하였다.
+
+### 5. InsecureShop AboutUsActivity에서 버튼 클릭
+
+![InsecureShop AboutUsActivity 화면](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/05-aboutus-runtime-screen.png)
+
+PoC 앱으로 `AboutUsActivity`를 실행한 뒤 `About InsecureShop` 버튼을 눌러 브로드캐스트를 발생시켰다.
+
+### 6. PoC App에서 자격증명 수신 확인
+
+![PoC App 화면 - 수신된 자격증명 표시](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/06-poc-ui-received-creds.png)
+
+PoC 앱 화면에서 `username = shopuser`, `password = !ns3csh0p` 값이 표시되었다.
+
+### 7. adb logcat 기반 수신 결과 검증
+
+![PoC App logcat - 브로드캐스트 수신 성공](../images/12-Use%20of%20Implicit%20intent%20to%20send%20a%20broadcast%20with%20sensitive%20data/07-logcat-received-creds.png)
+
+`adb logcat`에서도 `received username = shopuser`, `received password = !ns3csh0p` 로그가 확인되었다. 이를 통해 외부 앱이 암시적 브로드캐스트를 통해 자격증명을 수신할 수 있음을 검증하였다.

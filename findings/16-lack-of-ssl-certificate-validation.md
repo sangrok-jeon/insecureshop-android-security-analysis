@@ -6,10 +6,6 @@
 
 이 구현은 신뢰할 수 없는 인증서, 만료된 인증서, 호스트명이 일치하지 않는 인증서 등을 WebView가 그대로 허용하게 만든다. 따라서 공격자가 네트워크 중간자 위치에서 변조된 인증서를 제시하더라도 WebView가 연결을 차단하지 않을 수 있으며, WebView에 로드되는 트래픽이 도청 또는 변조될 수 있다.
 
-실제 검증에서는 `WebViewActivity`를 딥링크로 실행해 `https://self-signed.badssl.com/`을 로드하였다. 해당 사이트는 self-signed 인증서를 사용하므로 정상적인 SSL 검증 흐름에서는 오류로 차단되어야 하지만, InsecureShop WebView에서는 페이지가 그대로 로드되었다.
-
-즉 이번 항목은 **`onReceivedSslError()`에서 SSL 오류를 무시하고 `handler.proceed()`를 호출함으로써 WebView의 HTTPS 인증서 검증이 우회되는 취약점**을 검증한 사례다.
-
 ## 2. 취약점 요약
 
 | 항목 | 내용 |
@@ -44,11 +40,9 @@
 
 ## 5. 상세 분석
 
-### 5.1 `WebViewActivity` 딥링크 진입점 확인
+### 5.1 `WebViewActivity` 딥링크 진입점
 
 Manifest를 확인한 결과 `WebViewActivity`는 `VIEW` 액션과 `BROWSABLE` 카테고리를 가진 딥링크 진입점으로 등록되어 있었다.
-
-![WebViewActivity 딥링크 설정 확인](../images/16-Lack%20of%20SSL%20Certificate%20Validation/01-webviewactivity-deeplink.png)
 
 ```xml
 <activity android:name="com.insecureshop.WebViewActivity">
@@ -69,11 +63,9 @@ Manifest를 확인한 결과 `WebViewActivity`는 `VIEW` 액션과 `BROWSABLE` �
 insecureshop://com.insecureshop/web?url=...
 ```
 
-### 5.2 `CustomWebViewClient` 등록 확인
+### 5.2 `CustomWebViewClient` 등록
 
 `WebViewActivity` 내부 구현을 확인한 결과, WebView에 기본 `WebViewClient`가 아닌 `CustomWebViewClient`가 등록되어 있었다.
-
-![WebViewActivity에서 CustomWebViewClient 등록 확인](../images/16-Lack%20of%20SSL%20Certificate%20Validation/02-set-custom-webviewclient.png)
 
 ```java
 webview.setWebViewClient(new CustomWebViewClient());
@@ -81,11 +73,9 @@ webview.setWebViewClient(new CustomWebViewClient());
 
 따라서 WebView에서 발생하는 SSL 오류는 `CustomWebViewClient`의 `onReceivedSslError()` 구현에 의해 처리된다.
 
-### 5.3 `onReceivedSslError()`에서 `handler.proceed()` 호출 확인
+### 5.3 `onReceivedSslError()`에서 SSL 오류 무시
 
 `CustomWebViewClient` 구현을 확인한 결과, SSL 인증서 오류가 발생했을 때 `handler.proceed()`를 호출하고 있었다.
-
-![CustomWebViewClient에서 handler.proceed 호출 확인](../images/16-Lack%20of%20SSL%20Certificate%20Validation/03-handler-proceed.png)
 
 ```java
 public final class CustomWebViewClient extends WebViewClient {
@@ -107,29 +97,15 @@ public final class CustomWebViewClient extends WebViewClient {
 - 호스트명이 일치하지 않는 인증서
 - 신뢰할 수 없는 CA가 발급한 인증서
 
-### 5.4 딥링크를 이용한 self-signed 인증서 페이지 로드
+### 5.4 `/web` 경로를 사용한 이유
 
-동적 검증에서는 대표적인 인증서 오류 유형 중 하나인 self-signed certificate를 대상으로 재현하였다. `expired.badssl.com`에서도 동일한 동작이 확인되었으나, 중복 증적을 줄이기 위해 본문에는 self-signed 인증서 사례를 중심으로 정리하였다.
+`WebViewActivity`는 딥링크 경로에 따라 URL 처리 방식이 달랐다. `/webview` 경로는 `url` 파라미터가 `insecureshopapp.com`으로 끝나는지 확인하지만, `/web` 경로는 전달된 `url` 파라미터를 그대로 `loadUrl()`로 전달한다.
 
-다음 명령으로 `WebViewActivity`에 `https://self-signed.badssl.com/` URL을 전달하였다.
+따라서 SSL 오류 재현에서는 다음 형태의 딥링크를 사용하였다.
 
-![self-signed.badssl.com 로드 명령 실행](../images/16-Lack%20of%20SSL%20Certificate%20Validation/05-self-signed-command.png)
-
-```powershell
-nox_adb shell am start -W -n com.insecureshop/.WebViewActivity -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/web?url=https%3A%2F%2Fself-signed.badssl.com%2F"
+```text
+insecureshop://com.insecureshop/web?url=https://self-signed.badssl.com/
 ```
-
-실행 결과 `Status: ok`와 함께 `Activity: com.insecureshop/.WebViewActivity`가 확인되었다.
-
-### 5.5 SSL 오류 페이지가 차단되지 않고 로드됨
-
-명령 실행 후 WebView에서 `self-signed.badssl.com` 페이지가 로드되는 것을 확인하였다.
-
-![self-signed.badssl.com 페이지가 WebView에 로드된 화면](../images/16-Lack%20of%20SSL%20Certificate%20Validation/04-self-signed-loaded.png)
-
-`self-signed.badssl.com`은 신뢰할 수 없는 self-signed 인증서를 사용하는 테스트 페이지다. 정상적인 SSL 검증 흐름이라면 WebView는 인증서 오류를 감지하고 연결을 중단해야 한다. 그러나 InsecureShop의 WebView는 `handler.proceed()` 호출로 인해 해당 페이지를 그대로 표시하였다.
-
-이를 통해 SSL 인증서 오류가 발생해도 WebView가 연결을 차단하지 않고 계속 진행함을 확인하였다.
 
 ## 6. 영향
 
@@ -177,6 +153,38 @@ public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError e
 
 ## 9. 취약점 테스트
 
-본 항목의 취약점 테스트는 5번 상세 분석에서 정적 근거 확인, `adb` 기반 딥링크 실행, self-signed 인증서 페이지 로드 확인까지 동일한 흐름으로 증적과 함께 다루었다.
+### 1. WebViewActivity 딥링크 설정 확인
 
-따라서 동일한 이미지와 설명의 반복을 피하기 위해 별도의 취약점 테스트 세부 절은 분리하지 않았다.
+![WebViewActivity 딥링크 설정 확인](../images/16-Lack%20of%20SSL%20Certificate%20Validation/01-webviewactivity-deeplink.png)
+
+`WebViewActivity`는 `VIEW`, `DEFAULT`, `BROWSABLE` intent-filter와 `insecureshop://com.insecureshop` 딥링크를 통해 외부에서 실행할 수 있었다.
+
+### 2. CustomWebViewClient 등록 확인
+
+![WebViewActivity에서 CustomWebViewClient 등록 확인](../images/16-Lack%20of%20SSL%20Certificate%20Validation/02-set-custom-webviewclient.png)
+
+`WebViewActivity`는 WebView에 `CustomWebViewClient`를 등록하고 있었다. 따라서 SSL 오류 처리 흐름은 이 클래스의 구현을 따른다.
+
+### 3. handler.proceed() 호출 확인
+
+![CustomWebViewClient에서 handler.proceed 호출 확인](../images/16-Lack%20of%20SSL%20Certificate%20Validation/03-handler-proceed.png)
+
+`CustomWebViewClient.onReceivedSslError()`는 SSL 오류 발생 시 `handler.cancel()`이 아니라 `handler.proceed()`를 호출한다. 이 코드가 WebView SSL 검증 우회의 핵심이다.
+
+### 4. self-signed 인증서 페이지 로드 명령 실행
+
+![self-signed.badssl.com 로드 명령 실행](../images/16-Lack%20of%20SSL%20Certificate%20Validation/05-self-signed-command.png)
+
+다음 명령으로 `WebViewActivity`에 `https://self-signed.badssl.com/` URL을 전달하였다.
+
+```powershell
+nox_adb shell am start -W -n com.insecureshop/.WebViewActivity -a android.intent.action.VIEW -d "insecureshop://com.insecureshop/web?url=https%3A%2F%2Fself-signed.badssl.com%2F"
+```
+
+실행 결과 `Status: ok`와 함께 `Activity: com.insecureshop/.WebViewActivity`가 확인되었다.
+
+### 5. self-signed.badssl.com 페이지 로드 확인
+
+![self-signed.badssl.com 페이지가 WebView에 로드된 화면](../images/16-Lack%20of%20SSL%20Certificate%20Validation/04-self-signed-loaded.png)
+
+`self-signed.badssl.com`은 신뢰할 수 없는 self-signed 인증서를 사용하는 테스트 페이지다. 정상적인 SSL 검증 흐름이라면 WebView는 인증서 오류를 감지하고 연결을 중단해야 한다. 그러나 InsecureShop의 WebView는 `handler.proceed()` 호출로 인해 해당 페이지를 그대로 표시하였다.
