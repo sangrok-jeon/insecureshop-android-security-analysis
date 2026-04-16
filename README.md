@@ -35,7 +35,7 @@
 - 실행 환경: `Nox`
 - 정적 분석: `jadx`
 - 동적 분석: `adb`, `Android Studio`
-- 보조 도구: `Burp Suite`, `Frida`, `APK Easy Tool`, `nuclei`, `AWS CLI`, `python http.server`
+- 보조 도구: `Burp Suite`, `APK Easy Tool`, `nuclei`, `AWS CLI`, `python http.server`
 
 ## 4. 완료한 분석 현황
 
